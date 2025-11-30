@@ -13,6 +13,7 @@ interface MissionPhaseProps {
   onStartDiscussion: () => void;
   isDrawingMission?: boolean;
   onStartDrawing?: () => void;
+  isHost: boolean; // Adicionado
 }
 
 export default function MissionPhase({
@@ -22,6 +23,7 @@ export default function MissionPhase({
   onStartDiscussion,
   isDrawingMission,
   onStartDrawing,
+  isHost, // Adicionado
 }: MissionPhaseProps) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6">
@@ -56,6 +58,25 @@ export default function MissionPhase({
             {mission.description}
           </p>
 
+          {mission.secretFact.type === 'ranking' && mission.secretFact.rankingItems && (
+            <div className="p-4 rounded-lg bg-secondary/10 border border-secondary/30">
+              <h3 className="text-sm font-semibold text-secondary mb-2 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" />
+                Itens para Ordenar
+              </h3>
+              <div className="flex flex-wrap justify-center gap-4 text-4xl">
+                {mission.secretFact.rankingItems.map((item, index) => (
+                  <span key={index} className="p-2 rounded-lg bg-background/50">
+                    {item}
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-center text-muted-foreground mt-3">
+                Critério: {mission.secretFact.rankingCriteria}
+              </p>
+            </div>
+          )}
+
           <div className="p-4 rounded-lg bg-secondary/10 border border-secondary/30">
             <h3 className="text-sm font-semibold text-secondary mb-2 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4" />
@@ -81,9 +102,14 @@ export default function MissionPhase({
             className="w-full"
             size="lg"
             onClick={isDrawingMission ? onStartDrawing : onStartDiscussion}
+            disabled={!isHost} // Desabilita se não for o Host
             data-testid="button-start-mission"
           >
-            {isDrawingMission ? 'Iniciar Desenho' : 'Iniciar Discussão'}
+            {isHost ? (
+              isDrawingMission ? 'Iniciar Desenho' : 'Iniciar Discussão'
+            ) : (
+              'Aguardando Host...'
+            )}
             <ChevronRight className="w-4 h-4 ml-2" />
           </Button>
         </CardContent>

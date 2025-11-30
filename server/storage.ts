@@ -31,6 +31,7 @@ export interface IStorage {
   getRoomByCode(code: string): Promise<Room | undefined>;
   joinRoom(code: string, playerName: string): Promise<{ room: Room; playerId: string } | null>;
   leaveRoom(roomId: string, playerId: string): Promise<Room | null>;
+  kickPlayer(roomId: string, hostId: string, playerIdToKick: string): Promise<Room | null>;
   updateRoom(roomId: string, updates: Partial<Room>): Promise<Room | null>;
   startGame(roomId: string): Promise<Room | null>;
   submitDrawing(roomId: string, drawing: DrawingData): Promise<Room | null>;
@@ -46,7 +47,7 @@ export class MemStorage implements IStorage {
 
   constructor() {
     this.rooms = new Map();
-    setInterval(() => this.cleanupOldRooms(), 60000);
+    setInterval(() => this.cleanupOldRooms(), 5000); // 5 segundos para checar desconexões
   }
 
   async createRoom(hostName: string): Promise<{ room: Room; playerId: string }> {
@@ -108,6 +109,63 @@ export class MemStorage implements IStorage {
     return undefined;
   }
 
+  async cleanupOldRooms(): Promise<void> {
+    const now = Date.now();
+    for (const [roomId, room] of this.rooms.entries()) {
+      let roomChanged = false;
+
+      // 1. Remove jogadores desconectados após 25 segundos
+      const initialPlayerCount = room.players.length;
+      room.players = room.players.filter(player => {
+        if (!player.isConnected && player.disconnectTime && now - player.disconnectTime > 25000) { // 25 segundos
+          roomChanged = true;
+          // Se o jogador for o host, passa a coroa
+          if (room.hostId === player.id) {
+            const nextHost = room.players.find(p => p.id !== player.id);
+            if (nextHost) {
+              room.hostId = nextHost.id;
+              nextHost.isHost = true;
+            }
+          }
+          return false; // Remove o jogador
+        }
+        return true; // Mantém o jogador
+      });
+
+      // 2. Verifica se o jogo deve ser encerrado após a remoção
+      const activePlayers = room.players.filter(p => p.isConnected);
+      if (room.status !== 'waiting' && activePlayers.length < 5) {
+        room.status = 'game_over';
+        room.winner = 'spies';
+        room.gameOverReason = 'Jogo encerrado: Menos de 5 jogadores ativos.';
+        roomChanged = true;
+      }
+
+      // 3. Remove salas vazias
+      if (room.players.length === 0) {
+        this.rooms.delete(roomId);
+        continue;
+      }
+
+      // 4. Remove salas que estão vazias há mais de 1 hora
+      if (room.players.length === 0 && now - room.createdAt > 3600000) {
+        this.rooms.delete(roomId);
+        continue;
+      }
+      
+      // 5. Remove salas que não foram atualizadas há mais de 24 horas
+      if (now - room.updatedAt > 86400000) {
+        this.rooms.delete(roomId);
+        continue;
+      }
+
+      if (roomChanged || initialPlayerCount !== room.players.length) {
+        this.rooms.set(roomId, room);
+        notifyRoomUpdate(roomId, room); // Notifica a mudança
+      }
+    }
+  }
+
   async joinRoom(code: string, playerName: string): Promise<{ room: Room; playerId: string } | null> {
     const room = await this.getRoomByCode(code);
     if (!room) return null;
@@ -130,20 +188,61 @@ export class MemStorage implements IStorage {
     return { room, playerId };
   }
 
-  async leaveRoom(roomId: string, playerId: string): Promise<Room | null> {
+  async kickPlayer(roomId: string, hostId: string, playerIdToKick: string): Promise<Room | null> {
     const room = this.rooms.get(roomId);
     if (!room) return null;
+    if (room.hostId !== hostId) return null; // Somente o host pode expulsar
+    if (room.hostId === playerIdToKick) return null; // Host não pode se expulsar
 
-    room.players = room.players.filter(p => p.id !== playerId);
+    room.players = room.players.filter(p => p.id !== playerIdToKick);
 
     if (room.players.length === 0) {
       this.rooms.delete(roomId);
       return null;
     }
 
+    // Se o jogo estiver em andamento e o número de jogadores ativos for menor que 5, encerra o jogo
+    const activePlayers = room.players.filter(p => p.isConnected);
+    if (room.status !== 'waiting' && activePlayers.length < 5) {
+      room.status = 'game_over';
+      room.winner = 'spies'; // Ou outro valor que indique encerramento por falta de jogadores
+      room.gameOverReason = 'Jogo encerrado: Menos de 5 jogadores ativos.';
+      this.rooms.set(roomId, room);
+      return room;
+    }
+
+    this.rooms.set(roomId, room);
+    return room;
+  }
+
+  async leaveRoom(roomId: string, playerId: string): Promise<Room | null> {
+    const room = this.rooms.get(roomId);
+    if (!room) return null;
+
+    // 1. Marca o jogador como desconectado e inicia o timeout
+    const player = room.players.find(p => p.id === playerId);
+    if (player) {
+      player.isConnected = false;
+      player.disconnectTime = Date.now();
+    }
+
+    // 2. Se o jogo estiver em andamento e o número de jogadores ativos for menor que 5, encerra o jogo
+    const activePlayers = room.players.filter(p => p.isConnected);
+    if (room.status !== 'waiting' && activePlayers.length < 5) {
+      room.status = 'game_over';
+      room.winner = 'spies'; // Ou outro valor que indique encerramento por falta de jogadores
+      room.gameOverReason = 'Jogo encerrado: Menos de 5 jogadores ativos.';
+      this.rooms.set(roomId, room);
+      return room;
+    }
+
+    // 3. Se o host sair, passa a coroa
     if (room.hostId === playerId && room.players.length > 0) {
-      room.hostId = room.players[0].id;
-      room.players[0].isHost = true;
+      const nextHost = room.players.find(p => p.id !== playerId);
+      if (nextHost) {
+        room.hostId = nextHost.id;
+        nextHost.isHost = true;
+      }
     }
 
     this.rooms.set(roomId, room);

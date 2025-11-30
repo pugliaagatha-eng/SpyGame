@@ -10,19 +10,23 @@ import type { Room, Player } from '@shared/schema';
 interface RoomLobbyProps {
   room: Room | null;
   isHost: boolean;
+  myPlayerId: string | null; // Adicionado
   onCreateRoom: (hostName: string) => void;
   onJoinRoom: (code: string, playerName: string) => void;
   onStartGame: () => void;
   onBack: () => void;
+  onKickPlayer: (playerIdToKick: string) => void; // Adicionado
 }
 
 export default function RoomLobby({ 
   room, 
   isHost, 
+  myPlayerId,
   onCreateRoom, 
   onJoinRoom, 
   onStartGame,
-  onBack 
+  onBack,
+  onKickPlayer
 }: RoomLobbyProps) {
   const [mode, setMode] = useState<'select' | 'create' | 'join'>(room ? 'create' : 'select');
   const [hostName, setHostName] = useState('');
@@ -132,21 +136,34 @@ export default function RoomLobby({
             </div>
 
             <div className="space-y-2 max-h-64 overflow-y-auto">
-              {room.players.map((player, index) => (
-                <div
-                  key={player.id}
-                  className="flex items-center justify-between p-3 rounded-md bg-muted/50 border border-border"
-                  data-testid={`player-card-${index}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full ${player.isConnected ? 'bg-green-500' : 'bg-gray-500'}`} />
-                    <span className="font-medium">{player.name}</span>
-                  </div>
-                  {player.isHost && (
-                    <Crown className="w-4 h-4 text-yellow-500" />
-                  )}
-                </div>
-              ))}
+                  {room.players.map((player, index) => (
+                    <div
+                      key={player.id}
+                      className="flex items-center justify-between p-3 rounded-md bg-muted/50 border border-border"
+                      data-testid={`player-card-${index}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${player.isConnected ? 'bg-green-500' : 'bg-gray-500'}`} />
+                        <span className="font-medium">{player.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {player.isHost && (
+                          <Crown className="w-4 h-4 text-yellow-500" />
+                        )}
+                        {isHost && player.id !== myPlayerId && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="h-6 px-2 text-xs"
+                            onClick={() => onKickPlayer(player.id)}
+                            data-testid={`button-kick-${player.id}`}
+                          >
+                            Expulsar
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
             </div>
 
             <div className="pt-4 space-y-3">

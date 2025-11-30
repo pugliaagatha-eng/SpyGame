@@ -72,6 +72,24 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/rooms/:roomId/kick", async (req, res) => {
+    try {
+      const { hostId, playerIdToKick } = req.body;
+      const room = await storage.kickPlayer(req.params.roomId, hostId, playerIdToKick);
+      
+      if (!room) {
+        return res.status(404).json({ error: "Room not found or host not authorized" });
+      }
+
+      notifyRoomUpdate(room.id, room);
+      
+      return res.json({ room });
+    } catch (error) {
+      console.error("Error kicking player:", error);
+      return res.status(500).json({ error: "Failed to kick player" });
+    }
+  });
+
   app.post("/api/rooms/:roomId/leave", async (req, res) => {
     try {
       const { playerId } = req.body;

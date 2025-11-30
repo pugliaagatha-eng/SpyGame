@@ -70,6 +70,10 @@ export default function SpyGame() {
   const { toast } = useToast();
   const { playWinSound } = useAudio();
 
+  const myPlayer = useMemo(() => {
+    return players.find(p => p.id === myPlayerId);
+  }, [players, myPlayerId]);
+
   useEffect(() => {
     if (winner) {
       playWinSound(winner);
@@ -163,12 +167,22 @@ export default function SpyGame() {
     switch (message.type) {
       case 'room_update':
       case 'player_joined':
-      case 'player_left':
-        if (payload && 'id' in payload) {
-          setRoom(payload);
-          setPlayers(payload.players);
-        }
-        break;
+	      case 'player_left':
+	      case 'player_kicked': // Adicionado para lidar com a expulsão
+	        if (payload && 'id' in payload) {
+	          setRoom(payload);
+	          setPlayers(payload.players);
+	          
+	          // Se o jogador expulso for o próprio usuário
+	          if (message.type === 'player_kicked' && payload.players.every(p => p.id !== myPlayerId)) {
+	            toast({ title: 'Você foi expulso!', description: 'O host removeu você da sala.', variant: 'destructive' });
+	            setRoom(null);
+	            setMyPlayerId(null);
+	            setPhase('splash');
+	            localStorage.removeItem('spy-game-session');
+	          }
+	        }
+	        break;
 
       case 'game_started':
         if (payload && 'id' in payload) {
@@ -352,6 +366,28 @@ export default function SpyGame() {
     }
   }, [toast, wsJoinRoom, saveSession]);
 
+  const handleKickPlayer = useCallback(async (playerIdToKick: string) => {
+    if (room && myPlayer?.isHost) {
+      try {
+        const response = await fetch(`/api/rooms/${room.id}/kick`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hostId: myPlayer.id, playerIdToKick }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          toast({ title: 'Jogador Expulso', description: `${players.find(p => p.id === playerIdToKick)?.name} foi expulso da sala.` });
+        } else {
+          toast({ title: 'Erro ao Expulsar', description: result.error || 'Não foi possível expulsar o jogador.', variant: 'destructive' });
+        }
+      } catch (error) {
+        toast({ title: 'Erro de Conexão', description: 'Não foi possível conectar ao servidor.', variant: 'destructive' });
+      }
+    }
+  }, [room, myPlayer, players, toast]);
+
   const handleJoinRoom = useCallback(async (code: string, playerName: string) => {
     const result = await apiJoinRoom(code, playerName);
     if (result.error) {
@@ -366,6 +402,28 @@ export default function SpyGame() {
       saveSession(result.data.room.id, result.data.playerId);
     }
   }, [toast, wsJoinRoom, saveSession]);
+
+  const handleKickPlayer = useCallback(async (playerIdToKick: string) => {
+    if (room && myPlayer?.isHost) {
+      try {
+        const response = await fetch(`/api/rooms/${room.id}/kick`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hostId: myPlayer.id, playerIdToKick }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          toast({ title: 'Jogador Expulso', description: `${players.find(p => p.id === playerIdToKick)?.name} foi expulso da sala.` });
+        } else {
+          toast({ title: 'Erro ao Expulsar', description: result.error || 'Não foi possível expulsar o jogador.', variant: 'destructive' });
+        }
+      } catch (error) {
+        toast({ title: 'Erro de Conexão', description: 'Não foi possível conectar ao servidor.', variant: 'destructive' });
+      }
+    }
+  }, [room, myPlayer, players, toast]);
 
   const handleAddPlayer = useCallback((name: string) => {
     const ability = ABILITIES[Math.floor(Math.random() * ABILITIES.length)];
@@ -755,10 +813,12 @@ export default function SpyGame() {
         <RoomLobby
           room={room}
           isHost={isHost}
+          myPlayerId={myPlayerId}
           onCreateRoom={handleCreateRoom}
           onJoinRoom={handleJoinRoom}
           onStartGame={handleStartGame}
           onBack={handleBackToMenu}
+          onKickPlayer={handleKickPlayer}
         />
       )}
 
@@ -791,14 +851,15 @@ export default function SpyGame() {
       )}
 
       {phase === 'mission' && mission && (
-        <MissionPhase
-          mission={mission}
-          currentRound={currentRound}
-          maxRounds={maxRounds}
-          onStartDiscussion={handleStartMission}
-          isDrawingMission={isDrawingMission}
-          onStartDrawing={handleStartMission}
-        />
+          <MissionPhase
+            mission={mission}
+            currentRound={currentRound}
+            maxRounds={maxRounds}
+            onStartDiscussion={handleStartMission}
+            isDrawingMission={mission.title === 'Desenho Secreto'}
+            onStartDrawing={handleStartMission}
+            isHost={myPlayer?.isHost || false}
+          />
       )}
 
       {phase === 'drawing' && mission && (mode === 'online' ? myPlayer : currentDrawingPlayer) && (
