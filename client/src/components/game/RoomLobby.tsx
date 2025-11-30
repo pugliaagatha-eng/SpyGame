@@ -59,10 +59,10 @@ export default function RoomLobby({
           variant="outline"
           className="fixed top-6 left-6 z-50 bg-background/80 backdrop-blur-sm"
           onClick={onBack}
-          data-testid="button-back-room"
+          data-testid="button-leave-room"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Voltar
+          Sair da Sala
         </Button>
 
         <div className="min-h-screen flex flex-col items-center justify-center p-6">

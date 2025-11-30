@@ -11,6 +11,7 @@ import VotingPhase from './VotingPhase';
 import VotingResult from './VotingResult';
 import GameOver from './GameOver';
 import AbilityPanel from './AbilityPanel';
+import ChatPanel from './ChatPanel';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { createRoom, joinRoom as apiJoinRoom, reconnectToRoom } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
@@ -24,7 +25,8 @@ import type {
   PlayerRole,
   Ability,
   WebSocketMessage,
-  SecretFact
+  SecretFact,
+  ChatMessage
 } from '@shared/schema';
 import { ABILITIES, MISSIONS, getRandomAbility, getMissionAlternatives } from '@shared/schema';
 
@@ -60,6 +62,8 @@ export default function SpyGame() {
   const [currentDrawingPlayerIndex, setCurrentDrawingPlayerIndex] = useState(0);
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [isChatMinimized, setIsChatMinimized] = useState(false);
   const { toast } = useToast();
   const { playWinSound } = useAudio();
 
@@ -155,6 +159,7 @@ export default function SpyGame() {
           setRoom(payload);
           setPlayers(payload.players);
           setMission(payload.mission);
+          setMissionAlternatives(payload.missionAlternatives || []);
           setPhase('role_reveal');
           setCurrentPlayerIndex(0);
         }
@@ -220,6 +225,12 @@ export default function SpyGame() {
           setPlayers(payload.players);
           setWinner(payload.winner);
           setPhase('game_over');
+        }
+        break;
+
+      case 'chat_message':
+        if (payload) {
+          setChatMessages(prev => [...prev, payload as ChatMessage]);
         }
         break;
 
@@ -446,7 +457,10 @@ export default function SpyGame() {
 
   const handleSubmitDrawing = useCallback((imageData: string) => {
     const activePlayers = players.filter(p => !p.isEliminated);
-    const currentPlayer = activePlayers[currentDrawingPlayerIndex];
+    // No modo online, usa myPlayer; no modo local, usa currentDrawingPlayer
+    const currentPlayer = mode === 'online' && myPlayerId 
+      ? players.find(p => p.id === myPlayerId)
+      : activePlayers[currentDrawingPlayerIndex];
     
     if (!currentPlayer) return;
 
@@ -468,7 +482,7 @@ export default function SpyGame() {
         setCurrentDrawingPlayerIndex(nextIndex);
       }
     }
-  }, [mode, room, players, currentDrawingPlayerIndex, sendMessage]);
+  }, [mode, room, players, currentDrawingPlayerIndex, myPlayerId, sendMessage]);
 
   const handleStartVoting = useCallback(() => {
     if (mode === 'online' && room) {
@@ -749,16 +763,16 @@ export default function SpyGame() {
         />
       )}
 
-      {phase === 'drawing' && mission && currentDrawingPlayer && (
+      {phase === 'drawing' && mission && (mode === 'online' ? myPlayer : currentDrawingPlayer) && (
         <DrawingCanvas
-          playerName={currentDrawingPlayer.name}
-          word={currentDrawingPlayer.role === 'agent' || currentDrawingPlayer.role === 'triple' 
+          playerName={mode === 'online' && myPlayer ? myPlayer.name : currentDrawingPlayer?.name || ''}
+          word={(mode === 'online' && myPlayer ? myPlayer.role : currentDrawingPlayer?.role) === 'agent' || (mode === 'online' && myPlayer ? myPlayer.role : currentDrawingPlayer?.role) === 'triple' 
             ? mission.secretFact.value 
             : undefined}
           hint={mission.secretFact.hint}
           duration={mission.duration}
           onSubmit={handleSubmitDrawing}
-          isAgent={currentDrawingPlayer.role === 'agent' || currentDrawingPlayer.role === 'triple'}
+          isAgent={(mode === 'online' && myPlayer ? myPlayer.role : currentDrawingPlayer?.role) === 'agent' || (mode === 'online' && myPlayer ? myPlayer.role : currentDrawingPlayer?.role) === 'triple'}
         />
       )}
 
@@ -812,6 +826,25 @@ export default function SpyGame() {
           onUseAbility={handleUseAbility}
           disabled={false}
           previousRoundVotes={previousRoundVotes}
+        />
+      )}
+
+      {mode === 'online' && myPlayer && phase !== 'splash' && phase !== 'room_lobby' && (
+        <ChatPanel
+          playerId={myPlayer.id}
+          playerName={myPlayer.name}
+          messages={chatMessages}
+          onSendMessage={(message, emoji) => {
+            if (room) {
+              sendMessage({
+                action: 'send_chat_message',
+                roomId: room.id,
+                payload: { playerId: myPlayer.id, playerName: myPlayer.name, message, emoji }
+              });
+            }
+          }}
+          isMinimized={isChatMinimized}
+          onToggleMinimize={() => setIsChatMinimized(!isChatMinimized)}
         />
       )}
     </div>

@@ -65,6 +65,7 @@ export interface Room {
   currentRound: number;
   maxRounds: number;
   mission: Mission | null;
+  missionAlternatives: SecretFact[];
   drawings: DrawingData[];
   votes: Record<string, string>;
   previousRoundVotes?: Record<string, string>;
@@ -72,6 +73,7 @@ export interface Room {
   currentVoterIndex: number;
   currentDrawingPlayerIndex: number;
   winner: 'agents' | 'spies' | 'jester' | null;
+  messages: ChatMessage[];
   createdAt: number;
 }
 
@@ -101,6 +103,7 @@ export type WebSocketMessageType =
   | 'timer_sync'
   | 'player_ready'
   | 'all_players_ready'
+  | 'chat_message'
   | 'error';
 
 export interface WebSocketMessage {
@@ -110,10 +113,18 @@ export interface WebSocketMessage {
   playerId?: string;
 }
 
+export interface ChatMessage {
+  id: string;
+  playerId: string;
+  playerName: string;
+  message: string;
+  emoji?: string;
+  timestamp: number;
+}
+
 export const ABILITIES: Ability[] = [
   { id: 'spy_vote', name: 'Espiar Voto', description: 'Veja o voto de um jogador', icon: 'Eye', used: false },
-  { id: 'swap_vote', name: 'Trocar Voto', description: 'Troque seu voto depois de ver o resultado parcial', icon: 'Repeat', used: false },
-  { id: 'extra_time', name: 'Tempo Extra', description: 'Adicione 30 segundos ao timer', icon: 'Clock', used: false },
+  { id: 'extra_time', name: 'Tempo Extra', description: 'Adicione 30 segundos ao timer de discussão', icon: 'Clock', used: false },
   { id: 'force_revote', name: 'Revotação', description: 'Force uma nova votação', icon: 'RotateCcw', used: false },
   { id: 'peek_role', name: 'Revelar Papel', description: 'Veja o papel de um jogador', icon: 'Search', used: false },
   { id: 'shield', name: 'Escudo', description: 'Proteja-se da eliminação por uma rodada', icon: 'Shield', used: false },
@@ -149,15 +160,8 @@ export function getRandomAbility(role?: PlayerRole): Ability {
     }
   }
   
-  // Shield is a rare ability (10% chance)
-  const hasShield = Math.random() < 0.10;
-  if (hasShield) {
-    const shieldAbility = ABILITIES.find(a => a.id === 'shield');
-    if (shieldAbility) return { ...shieldAbility, used: false };
-  }
-  
-  const availableAbilities = ABILITIES.filter(a => a.id !== 'shield');
-  return { ...availableAbilities[Math.floor(Math.random() * availableAbilities.length)], used: false };
+  // Todas as habilidades têm a mesma chance agora
+  return { ...ABILITIES[Math.floor(Math.random() * ABILITIES.length)], used: false };
 }
 
 export type MissionCategory = 'palavra' | 'desenho' | 'gesto' | 'codigo' | 'local' | 'som' | 'historia' | 'objeto' | 'personagem' | 'acao';
@@ -196,16 +200,16 @@ export const MISSIONS: Mission[] = [
   { id: 30, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'PORTAL', hint: 'Passagem para outro lugar' }, duration: 90 },
 
   // DESENHO SECRETO (30 missões)
-  { id: 31, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'PIZZA', hint: 'Comida italiana redonda' }, duration: 60 },
-  { id: 32, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'CASTELO', hint: 'Moradia de reis' }, duration: 60 },
-  { id: 33, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'SUBMARINO', hint: 'Veículo subaquático' }, duration: 60 },
-  { id: 34, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'FOGUETE', hint: 'Vai para o céu com fogo' }, duration: 60 },
-  { id: 35, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'PALMEIRA', hint: 'Árvore tropical' }, duration: 60 },
-  { id: 36, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'GUITARRA', hint: 'Instrumento musical com cordas' }, duration: 60 },
-  { id: 37, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'BICICLETA', hint: 'Transporte de duas rodas' }, duration: 60 },
-  { id: 38, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'TUBARÃO', hint: 'Predador dos oceanos' }, duration: 60 },
-  { id: 39, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'CACHOEIRA', hint: 'Água caindo de altura' }, duration: 60 },
-  { id: 40, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'HELICÓPTERO', hint: 'Voa com hélices' }, duration: 60 },
+  { id: 31, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'PIZZA', hint: 'Algo que se divide em fatias' }, duration: 60 },
+  { id: 32, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'CASTELO', hint: 'Construção com torres altas' }, duration: 60 },
+  { id: 33, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'SUBMARINO', hint: 'Navega onde não se vê o sol' }, duration: 60 },
+  { id: 34, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'FOGUETE', hint: 'Deixa um rastro de fumaça' }, duration: 60 },
+  { id: 35, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'PALMEIRA', hint: 'Tem folhas mas não é livro' }, duration: 60 },
+  { id: 36, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'GUITARRA', hint: 'Tem cordas mas não é sapato' }, duration: 60 },
+  { id: 37, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'BICICLETA', hint: 'Tem pedais e guidon' }, duration: 60 },
+  { id: 38, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'TUBARÃO', hint: 'Tem barbatanas e dentes afiados' }, duration: 60 },
+  { id: 39, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'CACHOEIRA', hint: 'Flui de cima para baixo' }, duration: 60 },
+  { id: 40, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'HELICÓPTERO', hint: 'Voa mas não tem asas' }, duration: 60 },
   { id: 41, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'CORUJA', hint: 'Ave noturna sábia' }, duration: 60 },
   { id: 42, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'PIRÂMIDE', hint: 'Construção egípcia triangular' }, duration: 60 },
   { id: 43, title: 'Desenho Secreto', description: 'Desenhe algo relacionado ao tema secreto. Agentes sabem o tema, Espiões tentarão blefar.', secretFact: { type: 'word', value: 'BALEIA', hint: 'Maior mamífero marinho' }, duration: 60 },

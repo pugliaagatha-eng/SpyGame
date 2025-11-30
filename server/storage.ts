@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
-import type { Room, Player, Mission, DrawingData, PlayerRole, Ability, GamePhase } from "@shared/schema";
-import { MISSIONS, getRandomAbility } from "@shared/schema";
+import type { Room, Player, Mission, DrawingData, PlayerRole, Ability, GamePhase, SecretFact } from "@shared/schema";
+import { MISSIONS, getRandomAbility, getMissionAlternatives } from "@shared/schema";
 
 // --- NOVA FUNÇÃO: Algoritmo Fisher-Yates para embaralhamento real ---
 function shuffleArray<T>(array: T[]): T[] {
@@ -78,12 +78,14 @@ export class MemStorage implements IStorage {
       currentRound: 1,
       maxRounds: 3,
       mission: null,
+      missionAlternatives: [],
       drawings: [],
       votes: {},
       currentPlayerIndex: 0,
       currentVoterIndex: 0,
       currentDrawingPlayerIndex: 0,
       winner: null,
+      messages: [],
       createdAt: Date.now(),
     };
 
@@ -189,6 +191,7 @@ export class MemStorage implements IStorage {
     
     room.status = 'role_reveal';
     room.mission = getRandomMission();
+    room.missionAlternatives = getMissionAlternatives(room.mission, 3);
     room.currentPlayerIndex = 0;
     room.currentRound = 1;
 
@@ -243,8 +246,9 @@ export class MemStorage implements IStorage {
       
       Object.entries(room.votes).forEach(([voterId, targetId]) => {
         const voter = room.players.find(p => p.id === voterId);
+        // Voto negativo do Tolo é sempre ativo (habilidade passiva)
         const hasNegativeVote = voter?.role === 'jester' && 
-          voter.abilities?.some(a => a.id === 'negative_vote' && !a.used);
+          voter.abilities?.some(a => a.id === 'negative_vote');
         
         if (hasNegativeVote) {
           // Jester's vote counts as -1

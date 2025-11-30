@@ -1,7 +1,7 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import type { Server } from 'http';
 import { storage } from './storage';
-import type { Room, DrawingData, WebSocketMessage, WebSocketMessageType } from '@shared/schema';
+import type { Room, DrawingData, WebSocketMessage, WebSocketMessageType, ChatMessage } from '@shared/schema';
 
 interface ExtendedWebSocket extends WebSocket {
   roomId?: string;
@@ -106,6 +106,10 @@ async function handleMessage(ws: ExtendedWebSocket, message: WebSocketMessage & 
 
     case 'start_mission':
       await handleStartMission(ws.roomId!);
+      break;
+
+    case 'send_chat_message':
+      await handleChatMessage(ws.roomId!, payload as { playerId: string; playerName: string; message: string; emoji?: string });
       break;
 
     case 'ping':
@@ -273,6 +277,25 @@ async function handleStartMission(roomId: string) {
     if (updatedRoom) {
       broadcastToRoom(roomId, { type: 'phase_changed', payload: updatedRoom });
     }
+  }
+}
+
+async function handleChatMessage(roomId: string, payload: { playerId: string; playerName: string; message: string; emoji?: string }) {
+  const room = await storage.getRoom(roomId);
+  if (room) {
+    const chatMessage: ChatMessage = {
+      id: Math.random().toString(36).substring(2, 9),
+      playerId: payload.playerId,
+      playerName: payload.playerName,
+      message: payload.message,
+      emoji: payload.emoji,
+      timestamp: Date.now(),
+    };
+    
+    room.messages.push(chatMessage);
+    await storage.updateRoom(roomId, { messages: room.messages });
+    
+    broadcastToRoom(roomId, { type: 'chat_message', payload: chatMessage });
   }
 }
 

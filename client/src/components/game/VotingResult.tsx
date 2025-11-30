@@ -46,7 +46,7 @@ export default function VotingResult({
         </CardHeader>
         
         <CardContent className="space-y-6">
-          {eliminatedPlayer && (
+          {eliminatedPlayer ? (
             <div className="text-center p-6 rounded-lg bg-destructive/10 border border-destructive/30">
               <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-destructive/20 flex items-center justify-center">
                 <Skull className="w-10 h-10 text-destructive" />
@@ -60,6 +60,16 @@ export default function VotingResult({
                   Era {roleInfo.name}
                 </Badge>
               )}
+            </div>
+          ) : (
+            <div className="text-center p-6 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-cyan-500/20 flex items-center justify-center">
+                <Skull className="w-10 h-10 text-cyan-400" />
+              </div>
+              <h3 className="font-serif text-2xl font-bold text-cyan-400 mb-2">
+                Ninguém foi eliminado!
+              </h3>
+              <p className="text-muted-foreground">Um escudo foi usado ou os votos se anularam.</p>
             </div>
           )}
 
