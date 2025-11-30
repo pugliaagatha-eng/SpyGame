@@ -790,8 +790,8 @@ export default function SpyGame() {
   const currentPlayer = players[currentPlayerIndex];
   const currentDrawingPlayer = activePlayers[currentDrawingPlayerIndex];
   const eliminatedPlayer = players.find(p => p.isEliminated && Object.values(votes).includes(p.id));
-  const isHost = room ? room.hostId === myPlayerId : true;
-  const myPlayer = myPlayerId ? players.find(p => p.id === myPlayerId) : currentPlayer;
+    const isHost = room ? room.hostId === myPlayerId : true;
+    const myPlayerInfo = myPlayerId ? players.find(p => p.id === myPlayerId) : null;urrentPlayer;
 
   const isDrawingMission = mission?.title === 'Desenho Secreto';
   // In online mode, show abilities for the player during discussion/voting
