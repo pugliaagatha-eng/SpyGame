@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Copy, Users, Crown, Wifi, ArrowLeft, Check, UserPlus } from 'lucide-react';
+import { Copy, Users, Crown, Wifi, ArrowLeft, Check, UserPlus, Link } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Room, Player } from '@shared/schema';
 
@@ -29,7 +29,19 @@ export default function RoomLobby({
   const [playerName, setPlayerName] = useState('');
   const [roomCode, setRoomCode] = useState('');
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const { toast } = useToast();
+
+  // Detectar código da sala na URL ao montar componente
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlRoomCode = urlParams.get('room');
+    
+    if (urlRoomCode && !room) {
+      setRoomCode(urlRoomCode.toUpperCase());
+      setMode('join');
+    }
+  }, [room]);
 
   const handleCopyCode = () => {
     if (room?.code) {
@@ -37,6 +49,17 @@ export default function RoomLobby({
       setCopied(true);
       toast({ title: 'Código copiado!' });
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleCopyLink = () => {
+    if (room?.code) {
+      const baseUrl = window.location.origin;
+      const link = `${baseUrl}/?room=${room.code}`;
+      navigator.clipboard.writeText(link);
+      setLinkCopied(true);
+      toast({ title: 'Link copiado!', description: 'Compartilhe com seus amigos' });
+      setTimeout(() => setLinkCopied(false), 2000);
     }
   };
 
@@ -77,16 +100,26 @@ export default function RoomLobby({
             <CardTitle className="font-serif text-3xl neon-text">
               {room.code}
             </CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCopyCode}
-              className="mx-auto"
-              data-testid="button-copy-code"
-            >
-              {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-              {copied ? 'Copiado!' : 'Copiar Código'}
-            </Button>
+            <div className="flex gap-2 justify-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCopyCode}
+                data-testid="button-copy-code"
+              >
+                {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                {copied ? 'Copiado!' : 'Copiar Código'}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCopyLink}
+                data-testid="button-copy-link"
+              >
+                {linkCopied ? <Check className="w-4 h-4 mr-2" /> : <Link className="w-4 h-4 mr-2" />}
+                {linkCopied ? 'Link Copiado!' : 'Copiar Link'}
+              </Button>
+            </div>
           </CardHeader>
           
           <CardContent className="space-y-4">

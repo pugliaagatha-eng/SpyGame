@@ -73,6 +73,19 @@ export default function SpyGame() {
     }
   }, [winner, playWinSound]);
 
+  // Detectar código da sala na URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomCode = urlParams.get('room');
+    
+    if (roomCode && phase === 'splash') {
+      // Automaticamente ir para modo online e preencher código
+      setMode('online');
+      setPhase('room_lobby');
+      // O RoomLobby vai detectar o código via URL params
+    }
+  }, [phase]);
+
   const [isReconnecting, setIsReconnecting] = useState(false);
 
   useEffect(() => {
