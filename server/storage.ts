@@ -86,6 +86,7 @@ export class MemStorage implements IStorage {
       currentDrawingPlayerIndex: 0,
       winner: null,
       messages: [],
+      spyMessages: [],
       createdAt: Date.now(),
     };
 
@@ -167,8 +168,24 @@ export class MemStorage implements IStorage {
     const shuffled = shuffleArray([...room.players]);
     
     const numSpies = Math.max(1, Math.floor(room.players.length / 3));
-    const hasTriple = room.players.length >= 5;
-    const hasJester = room.players.length >= 5;
+    
+    // Até 7 jogadores: Tolo OU Triplo (aleatório)
+    // 7+ jogadores: Tolo E Triplo
+    let hasTriple = false;
+    let hasJester = false;
+    
+    if (room.players.length >= 5 && room.players.length < 7) {
+      // Escolhe aleatoriamente entre Tolo ou Triplo
+      if (Math.random() < 0.5) {
+        hasTriple = true;
+      } else {
+        hasJester = true;
+      }
+    } else if (room.players.length >= 7) {
+      // Ambos
+      hasTriple = true;
+      hasJester = true;
+    }
 
     // 2. Atribui os papéis (Isso cria uma lista ordenada: Espiões primeiro, etc)
     const playersWithRoles = shuffled.map((player, index) => {
@@ -177,7 +194,7 @@ export class MemStorage implements IStorage {
         role = 'spy';
       } else if (hasTriple && index === numSpies) {
         role = 'triple';
-      } else if (hasJester && index === numSpies + 1) {
+      } else if (hasJester && index === numSpies + (hasTriple ? 1 : 0)) {
         role = 'jester';
       }
       // Re-rola a habilidade baseada no papel novo
@@ -191,7 +208,7 @@ export class MemStorage implements IStorage {
     
     room.status = 'role_reveal';
     room.mission = getRandomMission();
-    room.missionAlternatives = getMissionAlternatives(room.mission, 3);
+    room.missionAlternatives = getMissionAlternatives(room.mission, 5);
     room.currentPlayerIndex = 0;
     room.currentRound = 1;
 

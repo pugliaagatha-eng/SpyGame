@@ -112,6 +112,10 @@ async function handleMessage(ws: ExtendedWebSocket, message: WebSocketMessage & 
       await handleChatMessage(ws.roomId!, payload as { playerId: string; playerName: string; message: string; emoji?: string });
       break;
 
+    case 'send_spy_chat_message':
+      await handleSpyChatMessage(ws.roomId!, payload as { playerId: string; playerName: string; message: string; emoji?: string });
+      break;
+
     case 'ping':
       sendToClient(ws, { type: 'room_update', payload: { pong: true } });
       break;
@@ -296,6 +300,39 @@ async function handleChatMessage(roomId: string, payload: { playerId: string; pl
     await storage.updateRoom(roomId, { messages: room.messages });
     
     broadcastToRoom(roomId, { type: 'chat_message', payload: chatMessage });
+  }
+}
+
+async function handleSpyChatMessage(roomId: string, payload: { playerId: string; playerName: string; message: string; emoji?: string }) {
+  const room = await storage.getRoom(roomId);
+  if (room) {
+    const player = room.players.find(p => p.id === payload.playerId);
+    if (!player || player.role !== 'spy') {
+      return; // Apenas espiões podem enviar mensagens secretas
+    }
+    
+    const chatMessage: ChatMessage = {
+      id: Math.random().toString(36).substring(2, 9),
+      playerId: payload.playerId,
+      playerName: payload.playerName,
+      message: payload.message,
+      emoji: payload.emoji,
+      timestamp: Date.now(),
+    };
+    
+    room.spyMessages.push(chatMessage);
+    await storage.updateRoom(roomId, { spyMessages: room.spyMessages });
+    
+    // Enviar apenas para espiões
+    const clients = roomClients[roomId];
+    if (clients) {
+      clients.forEach((client) => {
+        const clientPlayer = room.players.find(p => p.id === client.playerId);
+        if (clientPlayer && clientPlayer.role === 'spy' && client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({ type: 'spy_chat_message', payload: chatMessage }));
+        }
+      });
+    }
   }
 }
 

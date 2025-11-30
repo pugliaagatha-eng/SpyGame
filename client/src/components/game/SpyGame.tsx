@@ -12,6 +12,7 @@ import VotingResult from './VotingResult';
 import GameOver from './GameOver';
 import AbilityPanel from './AbilityPanel';
 import ChatPanel from './ChatPanel';
+import SpyChatPanel from './SpyChatPanel';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { createRoom, joinRoom as apiJoinRoom, reconnectToRoom } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
@@ -64,6 +65,8 @@ export default function SpyGame() {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isChatMinimized, setIsChatMinimized] = useState(false);
+  const [spyChatMessages, setSpyChatMessages] = useState<ChatMessage[]>([]);
+  const [isSpyChatMinimized, setIsSpyChatMinimized] = useState(false);
   const { toast } = useToast();
   const { playWinSound } = useAudio();
 
@@ -247,6 +250,12 @@ export default function SpyGame() {
         }
         break;
 
+      case 'spy_chat_message':
+        if (payload) {
+          setSpyChatMessages(prev => [...prev, payload as ChatMessage]);
+        }
+        break;
+
       case 'ability_used':
         {
           const abilityPayload = message.payload as { room: Room; playerId: string; abilityId: string; targetId?: string; effect?: string };
@@ -379,8 +388,24 @@ export default function SpyGame() {
   const assignRoles = useCallback((playerList: Player[]): Player[] => {
     const shuffled = [...playerList].sort(() => Math.random() - 0.5);
     const numSpies = Math.max(1, Math.floor(playerList.length / 3));
-    const hasTriple = playerList.length >= 5;
-    const hasJester = playerList.length >= 5;
+    
+    // Até 7 jogadores: Tolo OU Triplo (aleatório)
+    // 7+ jogadores: Tolo E Triplo
+    let hasTriple = false;
+    let hasJester = false;
+    
+    if (playerList.length >= 5 && playerList.length < 7) {
+      // Escolhe aleatoriamente entre Tolo ou Triplo
+      if (Math.random() < 0.5) {
+        hasTriple = true;
+      } else {
+        hasJester = true;
+      }
+    } else if (playerList.length >= 7) {
+      // Ambos
+      hasTriple = true;
+      hasJester = true;
+    }
     
     return shuffled.map((player, index) => {
       let role: PlayerRole = 'agent';
@@ -388,7 +413,7 @@ export default function SpyGame() {
         role = 'spy';
       } else if (hasTriple && index === numSpies) {
         role = 'triple';
-      } else if (hasJester && index === numSpies + 1) {
+      } else if (hasJester && index === numSpies + (hasTriple ? 1 : 0)) {
         role = 'jester';
       }
       return { 
@@ -416,7 +441,7 @@ export default function SpyGame() {
       // Embaralhar a ordem de exibição dos papéis para não revelar quem é quem
       const shuffledPlayers = [...playersWithRoles].sort(() => Math.random() - 0.5);
       const selectedMission = MISSIONS[Math.floor(Math.random() * MISSIONS.length)];
-      const alternatives = getMissionAlternatives(selectedMission, 3);
+      const alternatives = getMissionAlternatives(selectedMission, 5);
       setPlayers(shuffledPlayers);
       setMission(selectedMission);
       setMissionAlternatives(alternatives);
@@ -858,6 +883,25 @@ export default function SpyGame() {
           }}
           isMinimized={isChatMinimized}
           onToggleMinimize={() => setIsChatMinimized(!isChatMinimized)}
+        />
+      )}
+
+      {mode === 'online' && myPlayer && myPlayer.role === 'spy' && phase !== 'splash' && phase !== 'room_lobby' && (
+        <SpyChatPanel
+          playerId={myPlayer.id}
+          playerName={myPlayer.name}
+          messages={spyChatMessages}
+          onSendMessage={(message, emoji) => {
+            if (room) {
+              sendMessage({
+                action: 'send_spy_chat_message',
+                roomId: room.id,
+                payload: { playerId: myPlayer.id, playerName: myPlayer.name, message, emoji }
+              });
+            }
+          }}
+          isMinimized={isSpyChatMinimized}
+          onToggleMinimize={() => setIsSpyChatMinimized(!isSpyChatMinimized)}
         />
       )}
     </div>

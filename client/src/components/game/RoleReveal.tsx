@@ -104,10 +104,6 @@ export default function RoleReveal({
         </div>
         
         <CardContent className="p-6 space-y-4">
-          <p className="text-center text-muted-foreground">
-            {roleInfo.description}
-          </p>
-
           {canSeeSPyList && spyList.length > 0 && (
             <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30">
               <h3 className="text-sm font-semibold text-red-400 mb-2 flex items-center gap-2">
@@ -126,32 +122,28 @@ export default function RoleReveal({
                 {canSeeSecret ? <Shield className="w-4 h-4" /> : <HelpCircle className="w-4 h-4" />}
                 {canSeeSecret ? 'Fato Secreto' : 'Possíveis Fatos'}
               </h3>
-              <div className="space-y-2">
-                {missionAlternatives.map((alt, index) => {
-                  const isCorrect = canSeeSecret && secretFact && alt.value === secretFact.value;
-                  return (
+              {canSeeSecret ? (
+                <div className="p-4 rounded bg-cyan-500/30 border border-cyan-400">
+                  <p className="font-mono text-center text-cyan-300 font-bold text-2xl">
+                    {secretFact?.value}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {missionAlternatives.map((alt, index) => (
                     <div 
                       key={index}
-                      className={`p-2 rounded ${
-                        isCorrect 
-                          ? 'bg-cyan-500/30 border border-cyan-400' 
-                          : 'bg-muted/30 border border-transparent'
-                      }`}
+                      className="p-3 rounded bg-muted/30 border border-border"
                     >
-                      <p className={`font-mono text-center ${isCorrect ? 'text-cyan-300 font-bold' : 'text-muted-foreground'}`}>
+                      <p className="font-mono text-center text-foreground text-lg">
                         {alt.value}
                       </p>
-                      <p className="text-xs text-center text-muted-foreground mt-1">
-                        {alt.hint}
-                      </p>
                     </div>
-                  );
-                })}
-              </div>
-              {!canSeeSecret && (
-                <p className="text-xs text-center text-muted-foreground mt-3">
-                  Uma dessas opções é a correta - descubra qual!
-                </p>
+                  ))}
+                  <p className="text-xs text-center text-muted-foreground mt-3">
+                    Uma dessas opções é a correta - descubra qual!
+                  </p>
+                </div>
               )}
             </div>
           )}
