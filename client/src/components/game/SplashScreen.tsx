@@ -74,7 +74,7 @@ export default function SplashScreen({ onSelectMode }: SplashScreenProps) {
                 <li><span className="text-cyan-400 font-semibold">Agente:</span> Elimine os Espiões. Recebe **3 Fatos Secretos** e deve deduzir qual é o correto.</li>
                 <li><span className="text-red-500 font-semibold">Espião:</span> Sobreviva até a maioria. Não recebe os Fatos. Tente descobrir o segredo e se misturar. **Sempre há pelo menos 2 Espiões.**</li>
                 <li><span className="text-purple-500 font-semibold">Agente Triplo:</span> Agente que aparece como Espião. Conhece o segredo, mas vence com os Espiões. **Aparece a partir de 7 jogadores.**</li>
-                <li><span className="text-yellow-500 font-semibold">O Tolo:</span> Vence se for eliminado! Seu objetivo é agir de forma suspeita e atraia votos. **Aparece a partir de 7 jogadores.**</li>},{find:
+                <li><span className="text-yellow-500 font-semibold">O Tolo:</span> Vence se for eliminado! Seu objetivo é agir de forma suspeita e atraia votos. **Aparece a partir de 7 jogadores.**</li>
               </ul>
             </section>
 

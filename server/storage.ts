@@ -209,7 +209,7 @@ export class MemStorage implements IStorage {
     room.status = 'role_reveal';
     room.mission = getRandomMission();
     // Agentes recebem 3 alternativas, Espiões não recebem dica pública (já removida do schema)
-    room.missionAlternatives = getMissionAlternatives(room.mission, 3);
+    room.missionAlternatives = getMissionAlternatives(room.mission, MISSIONS.length); // Agentes recebem todas as missões possíveis
     room.currentPlayerIndex = 0;
     room.currentRound = 1;
 

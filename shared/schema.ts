@@ -38,6 +38,7 @@ export interface Player {
 export interface SecretFact {
   type: 'emoji' | 'code' | 'gesture' | 'word' | 'ranking' | 'explanation';
   value: string;
+  hint?: string; // Dica pública ampla para todos (exceto espiões, que não veem nada)
 
   spyValue?: string; // Para missões de Explicação - valor diferente para espiões
   rankingItems?: string[]; // Para missões de Ranking
@@ -197,28 +198,42 @@ export function getRandomAbility(role?: PlayerRole): Ability {
 
 export type MissionCategory = 'palavra' | 'desenho' | 'gesto' | 'codigo' | 'local' | 'som' | 'historia' | 'objeto' | 'personagem' | 'acao' | 'ranking' | 'explicacao';
 
+// Missões de Código Secreto - Agentes sabem o código de 4 dígitos
+export const CODE_MISSIONS: Mission[] = [
+  { id: 3001, title: 'Código Secreto', description: 'Agentes sabem o código de 4 dígitos. Espiões tentam adivinhar ou blefar.', secretFact: { type: 'code', value: '1984', hint: 'Ano de um livro famoso de George Orwell' }, duration: 60 },
+  { id: 3002, title: 'Código Secreto', description: 'Agentes sabem o código de 4 dígitos. Espiões tentam adivinhar ou blefar.', secretFact: { type: 'code', value: '0007', hint: 'Código de um famoso agente secreto' }, duration: 60 },
+  { id: 3003, title: 'Código Secreto', description: 'Agentes sabem o código de 4 dígitos. Espiões tentam adivinhar ou blefar.', secretFact: { type: 'code', value: '4242', hint: 'Resposta para a vida, o universo e tudo mais (em dobro)' }, duration: 60 },
+  { id: 3004, title: 'Código Secreto', description: 'Agentes sabem o código de 4 dígitos. Espiões tentam adivinhar ou blefar.', secretFact: { type: 'code', value: '2025', hint: 'O ano atual (ou próximo)' }, duration: 60 },
+  { id: 3005, title: 'Código Secreto', description: 'Agentes sabem o código de 4 dígitos. Espiões tentam adivinhar ou blefar.', secretFact: { type: 'code', value: '1024', hint: 'Um kilobyte em bytes' }, duration: 60 },
+  { id: 3006, title: 'Código Secreto', description: 'Agentes sabem o código de 4 dígitos. Espiões tentam adivinhar ou blefar.', secretFact: { type: 'code', value: '3141', hint: 'Os primeiros 4 dígitos de Pi' }, duration: 60 },
+  { id: 3007, title: 'Código Secreto', description: 'Agentes sabem o código de 4 dígitos. Espiões tentam adivinhar ou blefar.', secretFact: { type: 'code', value: '9999', hint: 'O maior número de 4 dígitos' }, duration: 60 },
+  { id: 3008, title: 'Código Secreto', description: 'Agentes sabem o código de 4 dígitos. Espiões tentam adivinhar ou blefar.', secretFact: { type: 'code', value: '1111', hint: 'Quatro uns' }, duration: 60 },
+  { id: 3009, title: 'Código Secreto', description: 'Agentes sabem o código de 4 dígitos. Espiões tentam adivinhar ou blefar.', secretFact: { type: 'code', value: '1234', hint: 'Sequência numérica simples' }, duration: 60 },
+  { id: 3010, title: 'Código Secreto', description: 'Agentes sabem o código de 4 dígitos. Espiões tentam adivinhar ou blefar.', secretFact: { type: 'code', value: '5678', hint: 'Sequência numérica simples (continuação)' }, duration: 60 },
+];
+
 // Missões de Explicação - Agentes recebem palavra específica, Espiões recebem palavra parecida
 export const EXPLANATION_MISSIONS: Mission[] = [
-  { id: 1001, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Suco de maracujá', hint: 'Bebida de fruta', spyValue: 'Suco de laranja' }, duration: 90 },
-  { id: 1002, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Pizza de calabresa', hint: 'Comida italiana', spyValue: 'Pizza de pepperoni' }, duration: 90 },
-  { id: 1003, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Café com leite', hint: 'Bebida quente', spyValue: 'Cappuccino' }, duration: 90 },
-  { id: 1004, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Bicicleta de montanha', hint: 'Veículo de duas rodas', spyValue: 'Bicicleta de corrida' }, duration: 90 },
-  { id: 1005, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Violão acústico', hint: 'Instrumento musical', spyValue: 'Guitarra elétrica' }, duration: 90 },
-  { id: 1006, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Pão francês', hint: 'Produto de padaria', spyValue: 'Pão de forma' }, duration: 90 },
-  { id: 1007, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Tênis de corrida', hint: 'Calçado esportivo', spyValue: 'Chuteira de futebol' }, duration: 90 },
-  { id: 1008, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Cachorro pastor alemão', hint: 'Animal de estimação', spyValue: 'Cachorro labrador' }, duration: 90 },
-  { id: 1009, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Sorvete de chocolate', hint: 'Sobremesa gelada', spyValue: 'Sorvete de baunilha' }, duration: 90 },
-  { id: 1010, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Carro elétrico', hint: 'Veículo moderno', spyValue: 'Carro híbrido' }, duration: 90 },
-  { id: 1011, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Filme de terror', hint: 'Gênero cinematográfico', spyValue: 'Filme de suspense' }, duration: 90 },
-  { id: 1012, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Praia do Caribe', hint: 'Destino de viagem', spyValue: 'Praia do Mediterrâneo' }, duration: 90 },
-  { id: 1013, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Hambúrguer artesanal', hint: 'Fast food', spyValue: 'Hambúrguer fast food' }, duration: 90 },
-  { id: 1014, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Cerveja artesanal', hint: 'Bebida alcoólica', spyValue: 'Cerveja industrial' }, duration: 90 },
-  { id: 1015, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Smartphone Android', hint: 'Dispositivo eletrônico', spyValue: 'iPhone' }, duration: 90 },
-  { id: 1016, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Yoga relaxante', hint: 'Exercício físico', spyValue: 'Pilates' }, duration: 90 },
-  { id: 1017, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Música clássica', hint: 'Gênero musical', spyValue: 'Música instrumental' }, duration: 90 },
-  { id: 1018, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Livro de ficção científica', hint: 'Tipo de literatura', spyValue: 'Livro de fantasia' }, duration: 90 },
-  { id: 1019, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Sapato social', hint: 'Calçado formal', spyValue: 'Mocassim' }, duration: 90 },
-  { id: 1020, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Jantar romântico', hint: 'Refeição especial', spyValue: 'Jantar de aniversário' }, duration: 90 },
+  { id: 1001, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Suco de maracujá', hint: 'Bebida de fruta tropical', spyValue: 'Suco de laranja' }, duration: 90 },
+  { id: 1002, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Pizza de calabresa', hint: 'Prato principal com embutido', spyValue: 'Pizza de pepperoni' }, duration: 90 },
+  { id: 1003, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Café com leite', hint: 'Bebida quente matinal', spyValue: 'Cappuccino' }, duration: 90 },
+  { id: 1004, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Bicicleta de montanha', hint: 'Veículo de duas rodas para trilhas', spyValue: 'Bicicleta de corrida' }, duration: 90 },
+  { id: 1005, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Violão acústico', hint: 'Instrumento musical de cordas', spyValue: 'Guitarra elétrica' }, duration: 90 },
+  { id: 1006, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Pão francês', hint: 'Produto de padaria crocante', spyValue: 'Pão de forma' }, duration: 90 },
+  { id: 1007, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Tênis de corrida', hint: 'Calçado esportivo para asfalto', spyValue: 'Chuteira de futebol' }, duration: 90 },
+  { id: 1008, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Cachorro pastor alemão', hint: 'Animal de estimação de guarda', spyValue: 'Cachorro labrador' }, duration: 90 },
+  { id: 1009, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Sorvete de chocolate', hint: 'Sobremesa gelada de cacau', spyValue: 'Sorvete de baunilha' }, duration: 90 },
+  { id: 1010, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Carro elétrico', hint: 'Veículo moderno sem combustão', spyValue: 'Carro híbrido' }, duration: 90 },
+  { id: 1011, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Filme de terror', hint: 'Gênero cinematográfico assustador', spyValue: 'Filme de suspense' }, duration: 90 },
+  { id: 1012, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Praia do Caribe', hint: 'Destino de viagem tropical', spyValue: 'Praia do Mediterrâneo' }, duration: 90 },
+  { id: 1013, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Hambúrguer artesanal', hint: 'Lanche feito à mão', spyValue: 'Hambúrguer fast food' }, duration: 90 },
+  { id: 1014, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Cerveja artesanal', hint: 'Bebida alcoólica especial', spyValue: 'Cerveja industrial' }, duration: 90 },
+  { id: 1015, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Smartphone Android', hint: 'Dispositivo eletrônico móvel', spyValue: 'iPhone' }, duration: 90 },
+  { id: 1016, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Yoga relaxante', hint: 'Exercício físico de alongamento', spyValue: 'Pilates' }, duration: 90 },
+  { id: 1017, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Música clássica', hint: 'Gênero musical antigo', spyValue: 'Música instrumental' }, duration: 90 },
+  { id: 1018, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Livro de ficção científica', hint: 'Tipo de literatura futurista', spyValue: 'Livro de fantasia' }, duration: 90 },
+  { id: 1019, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Sapato social', hint: 'Calçado formal de couro', spyValue: 'Mocassim' }, duration: 90 },
+  { id: 1020, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Jantar romântico', hint: 'Refeição especial a dois', spyValue: 'Jantar de aniversário' }, duration: 90 },
 ];
 
 // Missões de Ranking Secreto - Ordenar itens por critério secreto
@@ -246,7 +261,8 @@ export const MISSIONS: Mission[] = [
   { id: 2, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'DRAGÃO', hint: 'Criatura mítica que cospe fogo' }, duration: 90 },
   // ... (continua com todas as outras missões de Palavra Chave, Desenho Secreto, Gesto Secreto, Código Numérico, Local Secreto, Personagem Famoso)
   
-  // Adiciona missões de Explicação e Ranking ao final
+  // Adiciona missões de Código Secreto, Explicação e Ranking ao final
+  ...CODE_MISSIONS,
   ...EXPLANATION_MISSIONS,
   ...RANKING_MISSIONS,
 ];
