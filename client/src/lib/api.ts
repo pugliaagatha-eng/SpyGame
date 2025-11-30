@@ -66,3 +66,10 @@ export async function reconnectToRoom(roomId: string, playerId: string): Promise
     body: JSON.stringify({ roomId, playerId }),
   });
 }
+
+export async function kickPlayer(roomId: string, hostId: string, playerIdToKick: string): Promise<ApiResponse<{ room: Room }>> {
+  return fetchApi(`/rooms/${roomId}/kick`, {
+    method: 'POST',
+    body: JSON.stringify({ hostId, playerIdToKick }),
+  });
+}

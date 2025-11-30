@@ -14,7 +14,7 @@ import AbilityPanel from './AbilityPanel';
 import ChatPanel from './ChatPanel';
 import SpyChatPanel from './SpyChatPanel';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { createRoom, joinRoom as apiJoinRoom, reconnectToRoom } from '@/lib/api';
+import { createRoom, joinRoom as apiJoinRoom, reconnectToRoom, kickPlayer } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAudio } from './AudioSystem';
 import type { 
@@ -167,22 +167,22 @@ export default function SpyGame() {
     switch (message.type) {
       case 'room_update':
       case 'player_joined':
-	      case 'player_left':
-	      case 'player_kicked': // Adicionado para lidar com a expulsão
-	        if (payload && 'id' in payload) {
-	          setRoom(payload);
-	          setPlayers(payload.players);
-	          
-	          // Se o jogador expulso for o próprio usuário
-	          if (message.type === 'player_kicked' && payload.players.every(p => p.id !== myPlayerId)) {
-	            toast({ title: 'Você foi expulso!', description: 'O host removeu você da sala.', variant: 'destructive' });
-	            setRoom(null);
-	            setMyPlayerId(null);
-	            setPhase('splash');
-	            localStorage.removeItem('spy-game-session');
-	          }
-	        }
-	        break;
+              case 'player_left':
+              case 'player_kicked': // Adicionado para lidar com a expulsão
+                if (payload && 'id' in payload) {
+                  setRoom(payload);
+                  setPlayers(payload.players);
+                  
+                  // Se o jogador expulso for o próprio usuário
+                  if (message.type === 'player_kicked' && payload.players.every(p => p.id !== myPlayerId)) {
+                    toast({ title: 'Você foi expulso!', description: 'O host removeu você da sala.', variant: 'destructive' });
+                    setRoom(null);
+                    setMyPlayerId(null);
+                    setPhase('splash');
+                    localStorage.removeItem('spy-game-session');
+                  }
+                }
+                break;
 
       case 'game_started':
         if (payload && 'id' in payload) {
@@ -383,7 +383,20 @@ export default function SpyGame() {
     }
   }, [toast, wsJoinRoom, saveSession]);
 
-
+  const handleKickPlayer = useCallback(async (playerIdToKick: string) => {
+    if (!room || !myPlayerId) return;
+    
+    const result = await kickPlayer(room.id, myPlayerId, playerIdToKick);
+    if (result.error) {
+      toast({ title: 'Erro', description: result.error, variant: 'destructive' });
+      return;
+    }
+    if (result.data) {
+      setRoom(result.data.room);
+      setPlayers(result.data.room.players);
+      toast({ title: 'Jogador expulso', description: 'O jogador foi removido da sala.' });
+    }
+  }, [room, myPlayerId, toast]);
 
   const handleAddPlayer = useCallback((name: string) => {
     const ability = ABILITIES[Math.floor(Math.random() * ABILITIES.length)];

@@ -40,9 +40,9 @@ export default function SplashScreen({ onSelectMode }: SplashScreenProps) {
             <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
               <Wifi className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
             </div>
-            <h2 className="font-serif text-xl sm:text-2xl font-bold text-primary mb-2">JOGAR ONLINE</h2>
+            <h2 className="font-serif text-xl sm:text-2xl font-bold text-primary mb-2">COMEÇAR MISSÃO</h2>
             <p className="text-muted-foreground text-sm">
-              Crie ou entre em uma sala virtual com jogadores remotos
+              Crie e compartilhe ou entre em uma sala virtual com seus amigos online!
             </p>
           </CardContent>
         </Card>
@@ -105,11 +105,11 @@ Cada jogador recebe uma habilidade única que pode usar uma vez por partida (ex:
               </h3>
               <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
 <li>**Início:** Cada jogador recebe seu papel. Agentes recebem **3 Fatos Secretos** (Palavra, Local, etc.) e devem deduzir qual é o correto. Espiões não recebem nenhum Fato.</li>
-	                <li>**Missão:** A missão da rodada é revelada. Pode ser uma Palavra Chave, um Desenho Secreto, um Ranking Secreto (com emojis) ou uma Explicação.</li>
-	                <li>**Discussão/Interação:** Os jogadores interagem de acordo com a missão (ex: desenhando, discutindo, ordenando). Agentes tentam confirmar o Fato Secreto, Espiões tentam blefar.</li>
-	                <li>**Votação:** Todos votam secretamente em quem acham que é o Espião. O Tolo tem um voto negativo que pode salvar alguém.</li>
-	                <li>**Eliminação:** O jogador mais votado é eliminado. Se for o Tolo, ele vence. Se for um Espião, os Agentes se aproximam da vitória.</li>
-	                <li>**Fim:** O jogo termina se todos os Espiões forem eliminados (vitória dos Agentes) ou se o número de Espiões for igual ou maior que o de Agentes (vitória dos Espiões). O Tolo vence se for eliminado.</li>
+                        <li>**Missão:** A missão da rodada é revelada. Pode ser uma Palavra Chave, um Desenho Secreto, um Ranking Secreto (com emojis) ou uma Explicação.</li>
+                        <li>**Discussão/Interação:** Os jogadores interagem de acordo com a missão (ex: desenhando, discutindo, ordenando). Agentes tentam confirmar o Fato Secreto, Espiões tentam blefar.</li>
+                        <li>**Votação:** Todos votam secretamente em quem acham que é o Espião. O Tolo tem um voto negativo que pode salvar alguém.</li>
+                        <li>**Eliminação:** O jogador mais votado é eliminado. Se for o Tolo, ele vence. Se for um Espião, os Agentes se aproximam da vitória.</li>
+                        <li>**Fim:** O jogo termina se todos os Espiões forem eliminados (vitória dos Agentes) ou se o número de Espiões for igual ou maior que o de Agentes (vitória dos Espiões). O Tolo vence se for eliminado.</li>
               </ol>
             </section>
           </div>
