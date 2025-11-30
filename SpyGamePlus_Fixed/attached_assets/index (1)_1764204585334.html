@@ -1,0 +1,1207 @@
+<!doctype html>
+<html lang="pt-BR">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jogo de Espiões</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+        /* --- ESTILOS GERAIS --- */
+        body {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .title {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .phase-indicator {
+            text-align: center;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+
+        .center { text-align: center; }
+        .hidden { display: none !important; }
+        
+        /* --- BOTÕES --- */
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+            user-select: none; 
+            -webkit-user-select: none;
+            position: relative;
+            z-index: 10;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(45deg, #a8edea 0%, #fed6e3 100%);
+            color: #333;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+        }
+        
+        .btn-mute-global {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            padding: 10px 15px;
+            font-size: 1.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        /* --- ANIMAÇÕES --- */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes flipInY {
+            from {
+                transform: perspective(400px) rotate3d(0, 1, 0, 90deg);
+                opacity: 0;
+            }
+            to {
+                transform: perspective(400px) rotate3d(0, 1, 0, 0deg);
+                opacity: 1;
+            }
+        }
+        
+        .animated-phase {
+            animation: fadeIn 0.6s ease-out;
+        }
+        
+        /* --- ESTILOS DE FASES --- */
+        
+        /* Fase 0: Splash */
+        .splash-container {
+            text-align: center;
+            padding: 40px 0;
+        }
+        .splash-container .title {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+        .splash-container p {
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+        }
+
+        /* Fase 1: Setup */
+        .player-count, .player-inputs { margin-bottom: 20px; }
+        .player-count { display: flex; align-items: center; gap: 15px; }
+        .player-count label { font-size: 1.1rem; font-weight: bold; }
+        .player-count select { padding: 10px; border-radius: 10px; border: none; font-size: 1rem; }
+        .player-inputs { display: grid; gap: 10px; }
+        .player-input { padding: 12px; border-radius: 10px; border: none; font-size: 1rem; }
+        
+        /* Fase 2: Papéis */
+        .role-card {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            margin: 20px 0;
+            animation: flipInY 0.7s ease-in-out; 
+        }
+        .role-title { font-size: 2rem; font-weight: bold; margin-bottom: 15px; }
+        .role-title-agent { color: #4facfe; }
+        .role-title-spy { color: #ff6b6b; }
+        .role-title-triple { color: #a8edea; }
+        .role-title-jester { color: #fbc531; } 
+        
+        .role-description { font-size: 1.1rem; line-height: 1.6; }
+        .spy-list { font-size: 1.1rem; color: #ffc9c9; margin-top: 15px; }
+        .agent-list { font-size: 1.1rem; color: #a8edea; margin-top: 15px; }
+        
+        .secret-facts {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            border: 1px solid #a8edea;
+            font-size: 1.1rem;
+            line-height: 1.7;
+        }
+        .secret-facts strong { color: #a8edea; }
+        
+        /* Fases 3 & 4: Missão e Discussão */
+        .mission-card {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+        .mission-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .mission-description {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        .mission-description strong { color: #a8edea; } 
+
+        .timer {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+        
+        /* Fase 5: Votação */
+        .voting-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .vote-btn {
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .vote-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.3); }
+        .vote-btn.selected { 
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.5);
+            transform: scale(1.05);
+        }
+        .vote-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        #votingIntermediary p {
+            font-size: 1.3rem;
+            font-weight: bold;
+            line-height: 1.7;
+        }
+        
+        /* Fase 6 & 7: Resultados */
+        .results {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .results h3 { font-size: 1.5rem; margin-bottom: 10px; }
+        .results p { font-size: 1.2rem; line-height: 1.6; }
+        .results-agents { color: #4facfe; }
+        .results-spies { color: #ff6b6b; }
+        .results-jester { color: #fbc531; }
+
+        /* Modal de Instruções */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+        .modal-content {
+            background: linear-gradient(135deg, #6a82fb 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            max-height: 80vh;
+            overflow-y: auto;
+            text-align: left; 
+            position: relative;
+            z-index: 2001;
+        }
+        .modal-content h2, .modal-content h3 {
+            margin-top: 15px;
+            text-align: center;
+        }
+        .modal-content ul {
+            padding-left: 20px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        .modal-content ul ul {
+            margin-top: 5px;
+        }
+        .modal-content li {
+            margin-bottom: 5px;
+        }
+        
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body>
+  <audio id="bgMusic" src="assets/song.mp3" loop></audio>
+  <audio id="winSound" src="assets/win.mp3"></audio>
+  <audio id="loseSound" src="assets/lose.mp3"></audio>
+
+  <button class="btn btn-mute-global" onclick="toggleMusic()" id="musicButton">🔊</button>
+
+  <div id="instructionsModal" class="modal-backdrop hidden">
+    <div class="modal-content">
+        <h2>Como Jogar</h2>
+        <p style="text-align: center;">Este é um jogo de identidade secreta. O objetivo é eliminar seus oponentes em 3 rodadas.</p>
+        
+        <h3>1. Os Papéis</h3>
+        <ul>
+            <li><strong>🛡️ Agente:</strong> Vence se todos os Espiões forem eliminados. <strong>Recebe os Fatos Secretos.</strong></li>
+            <li><strong>🕵️ Espião:</strong> Vence se, no final da 3ª rodada, houver um número de Espiões igual ou maior que o de Agentes. <strong>Não recebe os Fatos Secretos.</strong></li>
+            <li><strong>🛡️🕵️ Agente Triplo (5+ Jogadores):</strong> É um Agente, mas aparece na lista dos Espiões, forçando os Espiões a blefar. <strong>Ele não sabe a identidade de ninguém</strong>.</li>
+            <li><strong>🤡 O Tolo (5+ Jogadores):</strong> Vence SOZINHO se for eliminado na votação. O jogo acaba imediatamente. <strong>Não recebe os Fatos Secretos.</strong></li>
+        </ul>
+
+        <h3>2. As Missões (1 por Rodada)</h3>
+        <p>Em cada rodada, uma missão aleatória é apresentada:</p>
+        <ul>
+            <li><strong>Missão de Fato Secreto (Emoji, Código ou Gesto):</strong>
+                <ul>
+                    <li>Os Agentes/Agente Triplo veem a resposta (ex: Emoji 🚀) no início do jogo.</li>
+                    <li>Durante a missão, uma <strong>Dica Pública</strong> é mostrada a TODOS.</li>
+                    <li>O objetivo dos Espiões/TOLO é usar a dica para blefar.</li>
+                </ul>
+            </li>
+        </ul>
+        
+        <h3>3. O Jogo</h3>
+        <ol>
+            <li><strong>Discussão (1:30):</strong> Discuta o que "aconteceu" na missão.</li>
+            <li><strong>Votação Secreta:</strong> Cada jogador vota em quem quer eliminar.</li>
+            <li><strong>Resultado:</strong> O jogador com mais votos é eliminado.</li>
+        </ol>
+
+        <h3>4. Como Vencer</h3>
+        <ul>
+            <li><strong>O Tolo vence</strong> se for eliminado.</li>
+            <li><strong>Agentes vencem</strong> se eliminarem todos os Espiões.</li>
+            <li><strong>Espiões vencem</strong> se tiverem maioria ou empate no final da 3ª rodada.</li>
+        </ul>
+        <div class="center">
+            <button class="btn btn-secondary" onclick="hideInstructions()" style="z-index: 2005; position: relative;">Entendido!</button>
+        </div>
+    </div>
+  </div>
+
+
+  <div class="container">
+
+   <div id="splashPhase" class="animated-phase">
+        <div class="splash-container">
+            <h1 class="title" id="gameTitle">Jogo de Espiões</h1>
+            <p>Descubra quem é o espião entre vocês.</p>
+            <button class="btn btn-primary" style="font-size: 1.5rem; padding: 20px 40px;" onclick="advancePhase()">Jogar</button>
+            <br>
+            <button class="btn btn-secondary" style="margin-top: 15px;" onclick="showInstructions()">Como Jogar</button>
+        </div>
+   </div>
+
+   <div id="setupPhase" class="hidden animated-phase">
+    <div class="phase-indicator">
+     Configuração do Jogo
+    </div>
+    <div class="player-setup">
+     <div class="player-count">
+      <label for="playerCount">Número de jogadores:</label> 
+      <select id="playerCount">
+       <option value="3">3 jogadores</option>
+       <option value="4">4 jogadores</option>
+       <option value="5" selected>5 jogadores</option>
+       <option value="6">6 jogadores</option>
+       <option value="7">7 jogadores</option>
+       <option value="8">8 jogadores</option>
+       <option value="9">9 jogadores</option>
+       <option value="10">10 jogadores</option>
+      </select>
+     </div>
+     <div class="player-inputs" id="playerInputs"></div>
+     <div class="center">
+      <button class="btn btn-primary" onclick="startGame()">Iniciar Jogo</button>
+     </div>
+    </div>
+   </div>
+   
+   <div id="rolesPhase" class="hidden animated-phase">
+    <div class="phase-indicator">
+     Fase 2: Revelação dos Papéis
+    </div>
+    <div id="roleReveal" class="center">
+     </div>
+   </div>
+   
+   <div id="missionPhase" class="hidden animated-phase">
+    <div class="phase-indicator" id="missionPhaseIndicator">
+     Fase 3: Missão 1 de 3
+    </div>
+    <div class="mission-card">
+     <div class="mission-title" id="missionTitle">
+      Missão Secreta
+     </div>
+     <div class="mission-description" id="missionDescription">
+      A descrição da missão aparecerá aqui.
+     </div>
+    </div>
+    
+    <div id="timerContainer">
+        <div class="timer" id="missionTimer">
+         3:00
+        </div>
+        <div class="center">
+            <button class="btn btn-primary" id="startMissionTimerButton" onclick="startMissionTimer()">Iniciar Missão</button> 
+            <button class="btn btn-secondary" id="skipToDiscussionButton" onclick="advancePhase()">Pular para Discussão</button>
+        </div>
+    </div>
+   </div>
+   
+   <div id="discussionPhase" class="hidden animated-phase">
+    <div class="phase-indicator" id="discussionPhaseIndicator">
+     Fase 4: Discussão 1 de 3
+    </div>
+    <div class="mission-card">
+     <div class="mission-title">
+      Tempo de Discussão
+     </div>
+     <div class="mission-description">
+      Agora é hora de discutir! Quem parecia suspeito durante a missão?
+     </div>
+    </div>
+    <div class="timer" id="discussionTimer">
+     1:30
+    </div>
+    <div class="center">
+        <button class="btn btn-primary" id="startDiscussionTimerButton" onclick="startDiscussionTimer()">Iniciar Discussão</button> 
+        <button class="btn btn-secondary" id="skipToVotingButton" onclick="advancePhase()">Ir para Votação</button>
+    </div>
+   </div>
+   
+   <div id="votingPhase" class="hidden animated-phase">
+    <div class="phase-indicator" id="votingPhaseIndicator">
+     Fase 5: Votação 1 de 3
+    </div>
+    <div class="mission-card">
+     <div class="mission-title" id="votingTitle">
+      Quem é o Espião?
+     </div>
+     
+     <div id="votingIntermediary" class="center">
+        <p id="votingPrompt">Passe o dispositivo para...</p>
+        <button class="btn btn-primary" onclick="showVoterScreen()">Estou pronto para votar</button>
+     </div>
+     
+     <div id="votingScreen" class="hidden">
+        <div class="mission-description center">
+            Selecione o jogador que você acha que é o espião.
+        </div>
+        <div class="voting-grid" id="votingGrid"></div>
+        <div class="center">
+            <button class="btn btn-danger" onclick="submitVote()">Confirmar Voto</button>
+        </div>
+     </div>
+
+    </div>
+   </div>
+   
+   <div id="resultsPhase" class="hidden animated-phase">
+    <div class="phase-indicator">
+     Resultados da Votação
+    </div>
+    <div class="results" id="gameResults"></div>
+    <div class="center"><button class="btn btn-primary" id="nextRoundButton" onclick="advancePhase()">Próxima Rodada</button>
+    </div>
+   </div>
+
+   <div id="endGamePhase" class="hidden animated-phase">
+    <div class="phase-indicator">
+     Fim de Jogo!
+    </div>
+    <div class="results" id="endGameResults">
+     </div>
+    <div class="center"><button class="btn btn-primary" onclick="resetGame()">Jogar Novamente</button>
+    </div>
+   </div>
+
+  </div>
+  <script>
+        // --- ESTADO DO JOGO ---
+        let players = []; 
+        let roles = []; 
+        let originalRoles = [];
+        let spies = []; 
+        // let agents = []; // Removido: Agente Triplo não precisa ver a lista de aliados.
+        
+        let currentRoleIndex = 0;
+        let selectedVote = null; 
+        let missionTimer = null;
+        let discussionTimer = null;
+        
+        let currentPhase = 'splashPhase'; 
+        let currentMission = null; 
+        
+        let voteCounts = {};
+        let currentVoterIndex = 0;
+
+        let roundCounter = 1;
+        const MAX_ROUNDS = 3;
+        
+        // --- BANCOS DE DADOS COM DICAS ---
+        const secretEmojiData = [
+            { fact: "🚀", hint: "viagem" }, { fact: "🔑", hint: "segurança" }, { fact: "🌉", hint: "cidade" }, { fact: "🌙", hint: "noite" },
+            { fact: "📡", hint: "comunicação" }, { fact: "📦", hint: "objeto" }, { fact: "🧊", hint: "natural" }, { fact: "🚂", hint: "transporte" },
+            { fact: "📻", hint: "tecnologia" }, { fact: "🚪", hint: "lugar" }, { fact: "🛡️", hint: "defesa" }, { fact: "👑", hint: "pessoa" },
+            { fact: "🎯", hint: "ação" }, { fact: "⚓", hint: "náutico" }, { fact: "💎", hint: "valioso" }, { fact: "💡", hint: "ideia" },
+            { fact: "💣", hint: "perigo" }, { fact: "🧭", hint: "direção" }, { fact: "🔗", hint: "conexão" }, { fact: "☠️", hint: "morte" }
+        ];
+        const secretCodeData = [
+            { fact: "1984", hint: "um ano famoso" }, { fact: "2001", hint: "um filme de espaço" }, { fact: "3141", hint: "relacionado à matemática" },
+            { fact: "1010", hint: "binário" }, { fact: "1337", hint: "gíria de internet" }, { fact: "0007", hint: "um agente famoso" },
+            { fact: "8675", hint: "número de telefone" }, { fact: "4321", hint: "sequência decrescente" }, { fact: "2211", hint: "dois pares" },
+            { fact: "5050", hint: "meio a meio" }, { fact: "9150", hint: "começa com 9" }, { fact: "1121", hint: "tem o número 2" },
+            { fact: "8080", hint: "termina com 0" }, { fact: "4040", hint: "números pares" }, { fact: "3003", hint: "um palíndromo" },
+            { fact: "1234", hint: "sequencial" }, { fact: "9876", hint: "sequencial" }, { fact: "5501", hint: "tem números repetidos" },
+            { fact: "7744", hint: "dois pares repetidos" }, { fact: "2600", hint: "um console antigo" }
+        ];
+        const secretGestureData = [
+            { fact: "Estalar os dedos", hint: "relacionado às mãos" }, { fact: "Bater palma", hint: "relacionado às mãos" },
+            { fact: "Tocar o nariz", hint: "relacionado ao rosto" }, { fact: "Coçar a cabeça", hint: "relacionado à cabeça" },
+            { fact: "Bater o pé", hint: "relacionado aos pés" }, { fact: "Piscar 2x", hint: "relacionado aos olhos" },
+            { fact: "Tocar a orelha", hint: "relacionado ao rosto" }, { fact: "Cruzar os braços", hint: "relacionado ao corpo" },
+            { fact: "Acenar com a cabeça", hint: "relacionado à cabeça" }, { fact: "Dar de ombros", hint: "relacionado ao corpo" }
+        ];
+
+        let secretEmoji = "", secretEmojiHint = "";
+        let secretCode = "", secretCodeHint = "";
+        let secretGesture = "", secretGestureHint = ""; 
+
+        // --- ESTRUTURA DAS MISSÕES ---
+        const missions = [
+            { type: 'emoji', title: "O Objeto Inesperado", guide: "A equipe investigou a casa segura do alvo. Havia um objeto muito estranho na mesa da cozinha, representado por um **EMOJI**. Os Agentes sabem qual é." },
+            { type: 'code', title: "O Código de Acesso", guide: "Para parar a transferência de dados, a equipe precisava de um **CÓDIGO (Ano)**. Os Agentes memorizaram o código." },
+            { type: 'gesture', title: "O Sinal Secreto", guide: "A agência tem um **GESTO** secreto. Os Agentes sabem qual é, mas os Espiões só têm uma dica." }
+        ];
+        
+        let missionDeck = [];
+        
+        const defaultConfig = {
+            game_title: "Jogo de Espiões"
+        };
+        
+        // --- ÁUDIO ---
+        const bgMusic = document.getElementById('bgMusic');
+        const winSound = document.getElementById('winSound');
+        const loseSound = document.getElementById('loseSound');
+        
+        let isMuted = false; 
+        
+        // --- INICIALIZAÇÃO ---
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('playerCount').addEventListener('change', generatePlayerInputs);
+            
+            // Setup do Backdrop
+            const backdrop = document.getElementById('instructionsModal');
+            backdrop.onclick = function(event) {
+                if (event.target === backdrop) {
+                    hideInstructions();
+                }
+            };
+
+            if (window.elementSdk) {
+                window.elementSdk.init({
+                    defaultConfig,
+                    onConfigChange,
+                    mapToCapabilities,
+                    mapToEditPanelValues
+                });
+            }
+        });
+
+        // Funções do Modal
+        function showInstructions() {
+            document.getElementById('instructionsModal').classList.remove('hidden');
+        }
+        function hideInstructions() {
+            document.getElementById('instructionsModal').classList.add('hidden');
+        }
+        
+        function toggleMusic() {
+            isMuted = !isMuted; 
+            const musicButton = document.getElementById('musicButton');
+            
+            bgMusic.muted = isMuted;
+            winSound.muted = isMuted;
+            loseSound.muted = isMuted;
+            
+            if (isMuted) {
+                musicButton.textContent = "🔇";
+                bgMusic.pause(); 
+            } else {
+                musicButton.textContent = "🔊";
+                if (currentPhase !== 'splashPhase') {
+                    bgMusic.play().catch(error => {
+                        console.log("Autoplay bloqueado pelo navegador.");
+                    });
+                }
+            }
+        }
+
+        function generatePlayerInputs() {
+            const count = parseInt(document.getElementById('playerCount').value);
+            const container = document.getElementById('playerInputs');
+            container.innerHTML = '';
+            
+            for (let i = 1; i <= count; i++) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'player-input';
+                input.placeholder = `Nome do Jogador ${i}`;
+                input.id = `player${i}`;
+                container.appendChild(input);
+            }
+        }
+        
+        // --- FASE 1: SETUP ---
+        function startGame() {
+            const playerCount = parseInt(document.getElementById('playerCount').value);
+            players = [];
+            
+            for (let i = 1; i <= playerCount; i++) {
+                const name = document.getElementById(`player${i}`).value.trim();
+                if (!name) {
+                    alert(`Por favor, insira o nome do Jogador ${i}`);
+                    return;
+                }
+                players.push(name);
+            }
+            
+            for (let i = players.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [players[i], players[j]] = [players[j], players[i]];
+            }
+
+            assignRoles(playerCount);
+            generateMissionDeck(); 
+            currentRoleIndex = 0;
+            roundCounter = 1; 
+            
+            advancePhase();
+        }
+
+        function generateMissionDeck() {
+            missionDeck = [...missions]; 
+            for (let i = missionDeck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [missionDeck[i], missionDeck[j]] = [missionDeck[j], missionDeck[i]];
+            }
+        }
+        
+        function assignRoles(playerCount) {
+            const spyCount = Math.floor(playerCount / 3) || 1; 
+            let tripleAgentCount = 0;
+            let jesterCount = 0;
+            
+            // --- LÓGICA DE PAPÉIS ATUALIZADA ---
+            if (playerCount >= 5 && playerCount <= 6) {
+                // 5 a 6 jogadores: OU Tolo OU Agente Triplo (50% chance)
+                if (Math.random() < 0.5) {
+                    tripleAgentCount = 1;
+                } else {
+                    jesterCount = 1;
+                }
+            } else if (playerCount >= 7) {
+                // 7+ jogadores: AMBOS
+                tripleAgentCount = 1;
+                jesterCount = 1;
+            }
+            
+            const agentCount = playerCount - spyCount - tripleAgentCount - jesterCount;
+            
+            let rolePool = [];
+            for (let i = 0; i < spyCount; i++) rolePool.push('spy');
+            for (let i = 0; i < tripleAgentCount; i++) rolePool.push('triple_agent');
+            for (let i = 0; i < jesterCount; i++) rolePool.push('jester'); 
+            for (let i = 0; i < agentCount; i++) rolePool.push('agent');
+            
+            // Embaralhar papéis
+            for (let i = rolePool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [rolePool[i], rolePool[j]] = [rolePool[j], rolePool[i]];
+            }
+            
+            roles = [];
+            spies = [];
+            // A lista 'agents' foi removida, Agente Triplo não verá aliados.
+            
+            players.forEach((name, index) => {
+                const role = rolePool[index];
+                roles.push({ name: name, role: role });
+                
+                // Espiões veem: Spy + Triple Agent
+                if (role === 'spy' || role === 'triple_agent') {
+                    spies.push(name);
+                }
+                
+                // A lógica de "Agente Triplo vê Agentes" foi removida.
+            });
+            
+            originalRoles = [...roles]; 
+            
+            const emojiChoice = secretEmojiData[Math.floor(Math.random() * secretEmojiData.length)];
+            secretEmoji = emojiChoice.fact;
+            secretEmojiHint = emojiChoice.hint;
+
+            const codeChoice = secretCodeData[Math.floor(Math.random() * secretCodeData.length)];
+            secretCode = codeChoice.fact;
+            secretCodeHint = codeChoice.hint;
+
+            const gestureChoice = secretGestureData[Math.floor(Math.random() * secretGestureData.length)];
+            secretGesture = gestureChoice.fact;
+            secretGestureHint = gestureChoice.hint;
+        }
+        
+        // --- FASE 2: PAPÉIS ---
+        function showNextRole() {
+            if (currentRoleIndex < players.length) {
+                const player = roles.find(r => r.name === players[currentRoleIndex]);
+                const roleReveal = document.getElementById('roleReveal');
+                
+                const secretFactsHTML = `
+                    <div class="secret-facts">
+                        <strong>Fatos Secretos (Memorize!):</strong><br>
+                        Emoji Secreto: <strong style="font-size: 1.5rem;">${secretEmoji}</strong><br>
+                        Código de Acesso: <strong>${secretCode}</strong><br>
+                        Gesto Secreto: <strong>${secretGesture}</strong>
+                    </div>
+                `;
+
+                if (player.role === 'spy') {
+                    roleReveal.innerHTML = `
+                        <div class="role-card">
+                            <div class="role-title role-title-spy">🕵️ ESPIÃO</div>
+                            <div class="role-description">
+                                <strong>${player.name}</strong>, você é um <strong>ESPIÃO</strong>!<br><br>
+                                Seu objetivo é sobreviver e eliminar os agentes. Você NÃO sabe os fatos secretos.
+                            </div>
+                            <div class="spy-list">
+                                Seus colegas (ou impostores) são: <br><strong>${spies.join(', ')}</strong>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="nextRole()">Entendi, Próximo Jogador</button>
+                    `;
+                } else if (player.role === 'triple_agent') {
+                     // AGENTE TRIPLO: Não vê a lista de agentes.
+                     roleReveal.innerHTML = `
+                        <div class="role-card">
+                            <div class="role-title role-title-triple">🛡️ AGENTE TRIPLO 🕵️</div>
+                            <div class="role-description">
+                                <strong>${player.name}</strong>, você é o <strong>AGENTE TRIPLO</strong>!<br><br>
+                                Você é um AGENTE e aparece na lista dos Espiões. Você não sabe quem são seus aliados,
+                                mas sabe os Fatos Secretos. Use isso para confundi-los!
+                            </div>
+                            ${secretFactsHTML}
+                        </div>
+                        <button class="btn btn-primary" onclick="nextRole()">Entendi, Próximo Jogador</button>
+                    `;
+                } else if (player.role === 'jester') { 
+                     roleReveal.innerHTML = `
+                        <div class="role-card">
+                            <div class="role-title role-title-jester">🤡 O TOLO 🤡</div>
+                            <div class="role-description">
+                                <strong>${player.name}</strong>, você é o <strong>TOLO</strong>!<br><br>
+                                Você não é Agente nem Espião. Seu objetivo é ser eliminado na votação.
+                                Aja de forma suspeita para ser votado! Você NÃO sabe os fatos secretos.
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="nextRole()">Entendi, Próximo Jogador</button>
+                    `;
+                } else { // Agente normal
+                    roleReveal.innerHTML = `
+                        <div class="role-card">
+                            <div class="role-title role-title-agent">🛡️ AGENTE</div>
+                            <div class="role-description">
+                                <strong>${player.name}</strong>, você é um <strong>AGENTE</strong>!<br><br>
+                                Seu objetivo é identificar e eliminar todos os espiões.
+                                Use os fatos secretos para encontrar os impostores!
+                            </div>
+                            ${secretFactsHTML}
+                        </div>
+                        <button class="btn btn-primary" onclick="nextRole()">Entendi, Próximo Jogador</button>
+                    `;
+                }
+            }
+        }
+        
+        function nextRole() {
+            currentRoleIndex++;
+            if (currentRoleIndex < players.length) {
+                document.getElementById('roleReveal').innerHTML = `
+                    <p>Passe o dispositivo para <strong>${players[currentRoleIndex]}</strong></p>
+                    <button class="btn btn-primary" onclick="showNextRole()">Mostrar Papel</button>
+                `;
+            } else {
+                advancePhase();
+            }
+        }
+        
+        // --- FASE 3: MISSÃO ---
+        function setupMission() {
+            if (missionDeck.length === 0) {
+                generateMissionDeck();
+            }
+            currentMission = missionDeck.pop(); 
+            
+            document.getElementById('missionPhaseIndicator').textContent = `Fase 3: Missão ${roundCounter} de ${MAX_ROUNDS}`;
+            document.getElementById('missionTitle').textContent = currentMission.title;
+
+            let description = currentMission.guide;
+            if (currentMission.type === 'emoji') {
+                description += `<br><br><strong>Dica Pública:</strong> ${secretEmojiHint}`;
+            } else if (currentMission.type === 'code') {
+                description += `<br><br><strong>Dica Pública:</strong> ${secretCodeHint}`;
+            } else if (currentMission.type === 'gesture') { 
+                description += `<br><br><strong>Dica Pública:</strong> ${secretGestureHint}`;
+            }
+            document.getElementById('missionDescription').innerHTML = description;
+            
+            if (missionTimer) clearInterval(missionTimer);
+            document.getElementById('missionTimer').textContent = "3:00"; 
+            document.getElementById('missionTimer').style.color = "white";
+            document.getElementById('startMissionTimerButton').disabled = false;
+            document.getElementById('skipToDiscussionButton').disabled = false;
+            
+            document.getElementById('timerContainer').classList.remove('hidden');
+        }
+        
+        function startMissionTimer() {
+            document.getElementById('startMissionTimerButton').disabled = true;
+            
+            let timeLeft = 180; // 3 minutos
+            const timerElement = document.getElementById('missionTimer');
+            timerElement.textContent = "3:00"; 
+            
+            missionTimer = setInterval(() => {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(missionTimer);
+                    timerElement.textContent = "Tempo Esgotado!";
+                    timerElement.style.color = "#ff6b6b";
+                    setTimeout(advancePhase, 2000); 
+                }
+                timeLeft--;
+            }, 1000);
+        }
+        
+        // --- FASE 4: DISCUSSÃO ---
+        function startDiscussionTimer() {
+            document.getElementById('startDiscussionTimerButton').disabled = true;
+            
+            if (discussionTimer) clearInterval(discussionTimer);
+            let timeLeft = 90; // 1 minuto e 30 segundos
+            const timerElement = document.getElementById('discussionTimer');
+            timerElement.textContent = "1:30"; 
+            
+            discussionTimer = setInterval(() => {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(discussionTimer);
+                    timerElement.textContent = "Tempo Esgotado!";
+                    timerElement.style.color = "#ff6b6b";
+                    setTimeout(advancePhase, 2000); 
+                }
+                timeLeft--;
+            }, 1000);
+        }
+        
+        // --- FASE 5: VOTAÇÃO (SECRETA) ---
+        
+        function startSecretVoting() {
+            voteCounts = {}; 
+            selectedVote = null;
+            currentVoterIndex = 0;
+            
+            document.getElementById('votingPhaseIndicator').textContent = `Fase 5: Votação ${roundCounter} de ${MAX_ROUNDS}`;
+
+            document.getElementById('votingScreen').classList.add('hidden');
+            document.getElementById('votingIntermediary').classList.remove('hidden');
+        
+            document.getElementById('votingTitle').textContent = "Quem é o Espião?";
+            document.getElementById('votingPrompt').textContent = `Passe o dispositivo para ${players[currentVoterIndex]}`;
+        }
+
+        function showVoterScreen() {
+            document.getElementById('votingIntermediary').classList.add('hidden');
+            document.getElementById('votingScreen').classList.remove('hidden');
+        
+            const currentVoterName = players[currentVoterIndex];
+            document.getElementById('votingTitle').textContent = `Voto de ${currentVoterName}`;
+        
+            const votingGrid = document.getElementById('votingGrid');
+            votingGrid.innerHTML = '';
+            selectedVote = null;
+        
+            players.forEach(player => {
+                const button = document.createElement('button');
+                button.className = 'vote-btn';
+                button.textContent = player;
+
+                if (player === currentVoterName) {
+                    button.disabled = true; // Não pode votar em si mesmo
+                } else {
+                    button.onclick = () => selectVote(player, button);
+                }
+                votingGrid.appendChild(button);
+            });
+        }
+        
+        function selectVote(playerName, buttonElement) {
+            document.querySelectorAll('#votingGrid .vote-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            buttonElement.classList.add('selected');
+            selectedVote = playerName;
+        }
+
+        function submitVote() {
+            if (selectedVote === null) {
+                alert('Você deve selecionar um jogador para votar!');
+                return;
+            }
+        
+            voteCounts[selectedVote] = (voteCounts[selectedVote] || 0) + 1;
+        
+            currentVoterIndex++;
+        
+            if (currentVoterIndex < players.length) {
+                document.getElementById('votingScreen').classList.add('hidden');
+                document.getElementById('votingIntermediary').classList.remove('hidden');
+                document.getElementById('votingTitle').textContent = "Quem é o Espião?";
+                document.getElementById('votingPrompt').textContent = `Passe o dispositivo para ${players[currentVoterIndex]}`;
+            } else {
+                tallyVotes();
+            }
+        }
+
+        function tallyVotes() {
+            let maxVotes = 0;
+            let playersWithMaxVotes = [];
+        
+            for (const player in voteCounts) {
+                if (voteCounts[player] > maxVotes) {
+                    maxVotes = voteCounts[player];
+                }
+            }
+        
+            for (const player in voteCounts) {
+                if (voteCounts[player] === maxVotes) {
+                    playersWithMaxVotes.push(player);
+                }
+            }
+        
+            let eliminatedPlayerName = null;
+            if (playersWithMaxVotes.length === 1 && maxVotes > 0) {
+                eliminatedPlayerName = playersWithMaxVotes[0];
+            }
+        
+            advancePhase(); 
+            showResults(eliminatedPlayerName);
+        }
+        
+        // --- FASE 6: RESULTADOS ---
+        function showResults(eliminatedPlayerName) {
+            let resultText = '';
+            let gameContinues = false;
+        
+            if (eliminatedPlayerName === null) {
+                resultText = `<h3>Houve um Empate!</h3><p>Ninguém foi eliminado nesta rodada.</p>`;
+                gameContinues = true;
+            } else {
+                const eliminatedPlayer = roles.find(r => r.name === eliminatedPlayerName);
+                
+                resultText = `<h3>Resultado da Votação</h3>`;
+                resultText += `<p><strong>${eliminatedPlayer.name}</strong> foi eliminado!</p>`;
+            
+                if (eliminatedPlayer.role === 'jester') {
+                    resultText += `<p class="results-jester">🤡 <strong>O TOLO FOI ELIMINADO!</strong> 🤡</p>`;
+                    document.getElementById('gameResults').innerHTML = resultText;
+                    endGame('jester');
+                    return;
+                }
+                
+                if (eliminatedPlayer.role === 'spy') {
+                    resultText += `<p class="results-agents">🎉 <strong>Parabéns!</strong> Vocês eliminaram um espião!</p>`;
+                } else if (eliminatedPlayer.role === 'triple_agent') {
+                    resultText += `<p class="results-spies">😱 <strong>Ops!</strong> Vocês eliminaram o Agente Triplo!</p>`;
+                } else {
+                    resultText += `<p class="results-spies">😱 <strong>Ops!</strong> Vocês eliminaram um agente inocente!</p>`;
+                }
+                
+                players = players.filter(p => p !== eliminatedPlayerName);
+                roles = roles.filter(r => r.name !== eliminatedPlayerName);
+                
+                const spyCount = roles.filter(r => r.role === 'spy').length;
+                if (spyCount === 0) {
+                    endGame('agents');
+                    return;
+                } else {
+                    gameContinues = true;
+                }
+            }
+            
+            document.getElementById('gameResults').innerHTML = resultText;
+
+            if (gameContinues) {
+                if (roundCounter === MAX_ROUNDS) {
+                    endGameByRounds();
+                } else {
+                    roundCounter++;
+                    document.getElementById('nextRoundButton').style.display = 'inline-block';
+                }
+            }
+        }
+        
+        // --- FASE 7: FIM DE JOGO ---
+        function endGameByRounds() {
+            // Chamado no final da 3ª rodada se ninguém venceu
+            const spyCount = roles.filter(r => r.role === 'spy').length;
+            // Tolo e Agente Triplo contam como Agentes no final
+            const agentCount = roles.filter(r => r.role !== 'spy').length;
+
+            if (spyCount >= agentCount) {
+                endGame('spies');
+            } else {
+                endGame('agents');
+            }
+        }
+
+        function endGame(winnerTeam) {
+            currentPhase = 'endGamePhase'; 
+            document.getElementById('resultsPhase').classList.add('hidden');
+            document.getElementById('nextRoundButton').style.display = 'none'; 
+            
+            bgMusic.pause();
+            
+            const resultsDiv = document.getElementById('endGameResults');
+            if (winnerTeam === 'agents') {
+                resultsDiv.innerHTML = `<h2 class="results-title results-agents">🎉 AGENTES VENCERAM! 🎉</h2><p>Todos os espiões foram eliminados ou o tempo acabou!</p>`;
+                if (!isMuted) winSound.play();
+            } else if (winnerTeam === 'spies') { 
+                resultsDiv.innerHTML = `<h2 class="results-title results-spies">🕵️ ESPIÕES VENCERAM! 🕵️</h2><p>O número de espiões é igual ou maior que o de agentes.</p>`;
+                if (!isMuted) loseSound.play();
+            } else if (winnerTeam === 'jester') { 
+                resultsDiv.innerHTML = `<h2 class="results-title results-jester">🤡 O TOLO VENCEU! 🤡</h2><p>O Tolo conseguiu ser eliminado! Vitória solo!</p>`;
+                if (!isMuted) winSound.play(); 
+            }
+            
+            resultsDiv.innerHTML += `<h4>Revelação dos Papéis:</h4>`;
+            originalRoles.forEach(player => {
+                let roleText = '';
+                let color = '';
+                
+                if (player.role === 'spy') {
+                    roleText = 'Espião'; color = '#ff6b6b';
+                } else if (player.role === 'agent') {
+                    roleText = 'Agente'; color = '#4facfe';
+                } else if (player.role === 'triple_agent') {
+                    roleText = 'Agente Triplo'; color = '#a8edea';
+                } else if (player.role === 'jester') {
+                    roleText = 'O Tolo'; color = '#fbc531';
+                }
+                
+                const isEliminated = !players.includes(player.name);
+                const eliminatedText = isEliminated ? ' (Eliminado)' : ' (Sobreviveu)';
+                
+                resultsDiv.innerHTML += `<p><strong>${player.name}:</strong> <span style="color: ${color};">${roleText}</span>${eliminatedText}</p>`;
+            });
+            
+            document.getElementById('endGamePhase').classList.remove('hidden');
+        }
+
+        // --- CONTROLE DE FLUXO ---
+        
+        function advancePhase() {
+            if (missionTimer) clearInterval(missionTimer);
+            if (discussionTimer) clearInterval(discussionTimer);
+
+            document.getElementById(currentPhase).classList.add('hidden');
+            
+            switch (currentPhase) {
+                case 'splashPhase':
+                    currentPhase = 'setupPhase';
+                    generatePlayerInputs(); 
+                    if (!isMuted) { 
+                        bgMusic.play().catch(e => console.log("Play falhou"));
+                    }
+                    break;
+                case 'setupPhase':
+                    currentPhase = 'rolesPhase';
+                    document.getElementById('roleReveal').innerHTML = `
+                        <p>Passe o dispositivo para <strong>${players[0]}</strong></p>
+                        <button class="btn btn-primary" onclick="showNextRole()">Mostrar Papel</button>
+                    `;
+                    break;
+                case 'rolesPhase':
+                    currentPhase = 'missionPhase';
+                    setupMission(); 
+                    break;
+                case 'missionPhase':
+                    currentPhase = 'discussionPhase';
+                    document.getElementById('discussionPhaseIndicator').textContent = `Fase 4: Discussão ${roundCounter} de ${MAX_ROUNDS}`;
+                    document.getElementById('startDiscussionTimerButton').disabled = false;
+                    document.getElementById('skipToVotingButton').disabled = false;
+                    startDiscussionTimer(); 
+                    break;
+                case 'discussionPhase':
+                    currentPhase = 'votingPhase'; 
+                    startSecretVoting();
+                    break;
+                case 'votingPhase':
+                    currentPhase = 'resultsPhase';
+                    break;
+                case 'resultsPhase':
+                    // Verificação de fim de jogo movida para showResults
+                    currentPhase = 'missionPhase';
+                    setupMission();
+                    break;
+            }
+            
+            // Impede que advancePhase mostre a próxima fase se o jogo já acabou
+            if (currentPhase !== 'endGamePhase') {
+                document.getElementById(currentPhase).classList.remove('hidden');
+            }
+        }
+
+        function resetGame() {
+            bgMusic.pause();
+            bgMusic.currentTime = 0;
+            winSound.pause();
+            winSound.currentTime = 0;
+            loseSound.pause();
+            loseSound.currentTime = 0;
+            
+            if (missionTimer) clearInterval(missionTimer);
+            if (discussionTimer) clearInterval(discussionTimer);
+            
+            players = [];
+            roles = [];
+            originalRoles = [];
+            spies = [];
+            // agents = []; // Variável removida
+            missionDeck = [];
+            currentRoleIndex = 0;
+            selectedVote = null;
+            currentMission = null;
+            voteCounts = {};
+            currentVoterIndex = 0;
+            roundCounter = 1;
+            
+            currentPhase = 'splashPhase'; 
+            
+            document.querySelectorAll('.container > div').forEach(div => {
+                div.classList.add('hidden');
+            });
+            document.getElementById('splashPhase').classList.remove('hidden');
+            document.getElementById('endGamePhase').classList.add('hidden'); 
+        }
+
+        // --- SDK (Sem alteração) ---
+        async function onConfigChange(config) {
+            const gameTitle = config.game_title || defaultConfig.game_title;
+            document.getElementById('gameTitle').textContent = gameTitle;
+        }
+
+        function mapToCapabilities(config) {
+            return {
+                recolorables: [],
+                borderables: [],
+                fontEditable: undefined,
+                fontSizeable: undefined
+            };
+        }
+
+        function mapToEditPanelValues(config) {
+            return new Map([
+                ["game_title", config.game_title || defaultConfig.game_title]
+            ]);
+        }
+    </script>
+ </body>
+</html>
