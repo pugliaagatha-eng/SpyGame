@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export type GameMode = 'online';
 export type PlayerRole = 'agent' | 'spy' | 'triple' | 'jester';
-export type AbilityType = 'spy_vote' | 'swap_vote' | 'extra_time' | 'force_revote' | 'peek_role' | 'shield' | 'negative_vote' | 'forensic_investigation';
+export type AbilityType = 'spy_vote' | 'swap_vote' | 'extra_time' | 'force_revote' | 'peek_role' | 'shield' | 'negative_vote' | 'forensic_investigation' | 'scramble_fact' | 'force_revote_30s';
 
 export type GamePhase = 
   | 'waiting'
@@ -130,6 +130,9 @@ export interface WebSocketMessage {
   playerId?: string;
 }
 
+export const SPY_ABILITY_SCRAMBLE: Ability = { id: 'scramble_fact', name: 'Transcrever Ligação', description: 'Revela o Fato Secreto da missão atual embaralhado no chat secreto.', icon: 'Headphones', used: false };
+export const SPY_ABILITY_REVOTE: Ability = { id: 'force_revote_30s', name: 'Revotação +30s', description: 'Força uma nova votação com 30 segundos extras de discussão.', icon: 'RotateCcw', used: false };
+
 export const ABILITIES: Ability[] = [
   { id: 'spy_vote', name: 'Espiar Voto', description: 'Veja o voto de um jogador', icon: 'Eye', used: false },
   { id: 'swap_vote', name: 'Trocar Voto', description: 'Troque seu voto depois de ver o resultado parcial', icon: 'Repeat', used: false },
@@ -180,19 +183,38 @@ export const AGENT_RARE_ABILITY: Ability = {
 
 export const JESTER_ABILITIES: Ability[] = [JESTER_ABILITY];
 
+// --- Funções Auxiliares ---
+export function shuffleString(str: string): string {
+  const arr = str.split('');
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.join('');
+}
+
 export function getRandomAbility(role?: PlayerRole): Ability {
   if (role === 'jester') {
     return { ...JESTER_ABILITY, used: false };
   }
   
   if (role === 'agent') {
-    const hasRareAbility = Math.random() < 0.15;
-    if (hasRareAbility) {
+    // 30% de chance de Escudo, 15% de Investigação Forense, 55% de outra habilidade
+    const rand = Math.random();
+    if (rand < 0.30) {
+      return { ...ABILITIES.find(a => a.id === 'shield')!, used: false };
+    } else if (rand < 0.45) { // 0.30 + 0.15
       return { ...AGENT_RARE_ABILITY, used: false };
+    }
+  } else if (role === 'triple') {
+    // Agente Triplo tem 50% de chance de Escudo
+    if (Math.random() < 0.5) {
+      return { ...ABILITIES.find(a => a.id === 'shield')!, used: false };
     }
   }
   
-  const availableAbilities = ABILITIES.filter(a => a.id !== 'shield');
+  // Para Agentes que não pegaram Escudo/Forense, e para Agente Triplo que não pegou Escudo
+  const availableAbilities = ABILITIES.filter(a => a.id !== 'shield' && a.id !== 'forensic_investigation');
   return { ...availableAbilities[Math.floor(Math.random() * availableAbilities.length)], used: false };
 }
 

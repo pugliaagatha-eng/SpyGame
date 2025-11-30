@@ -116,35 +116,25 @@ export default function RoleReveal({
             </div>
           )}
 
-          {missionAlternatives.length > 0 && (
+	          {canSeeSecret && secretFact && (
             <div className="p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
-              <h3 className="text-sm font-semibold text-cyan-400 mb-2 flex items-center gap-2">
-                {canSeeSecret ? <Shield className="w-4 h-4" /> : <HelpCircle className="w-4 h-4" />}
-                {canSeeSecret ? 'Fato Secreto' : 'Possíveis Fatos'}
-              </h3>
-              {canSeeSecret ? (
-                <div className="p-4 rounded bg-cyan-500/30 border border-cyan-400">
-                  <p className="font-mono text-center text-cyan-300 font-bold text-2xl">
-                    {secretFact?.value}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {missionAlternatives.map((alt, index) => (
-                    <div 
-                      key={index}
-                      className="p-3 rounded bg-muted/30 border border-border"
-                    >
-                      <p className="font-mono text-center text-foreground text-lg">
-                        {alt.value}
-                      </p>
-                    </div>
-                  ))}
-                  <p className="text-xs text-center text-muted-foreground mt-3">
-                    Uma dessas opções é a correta - descubra qual!
-                  </p>
-                </div>
-              )}
+	              <h3 className="text-sm font-semibold text-cyan-400 mb-2 flex items-center gap-2">
+	                <Shield className="w-4 h-4" />
+	                Fato Secreto da Missão
+	              </h3>
+	              <div className="p-4 rounded bg-cyan-500/30 border border-cyan-400">
+	                <p className="font-mono text-center text-cyan-300 font-bold text-2xl">
+	                  {secretFact.value}
+	                </p>
+	              </div>
+	              <div className="text-center mt-4 p-2 rounded bg-yellow-500/10 border border-yellow-500/30">
+	                <p className="text-sm font-semibold text-yellow-300">
+	                  TELEFONEMA PARA OS AGENTES!
+	                </p>
+	                <p className="text-xs text-muted-foreground">
+	                  O Fato Secreto acima é o da missão atual.
+	                </p>
+	              </div>
             </div>
           )}
 

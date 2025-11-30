@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import type { Room, Player, Mission, DrawingData, PlayerRole, Ability, GamePhase, SecretFact } from "@shared/schema";
-import { MISSIONS, getRandomAbility, getMissionAlternatives } from "@shared/schema";
+import { MISSIONS, getRandomAbility, getMissionAlternatives, shuffleString, SPY_ABILITY_SCRAMBLE, SPY_ABILITY_REVOTE } from "@shared/schema";
 
 // --- NOVA FUNÇÃO: Algoritmo Fisher-Yates para embaralhamento real ---
 function shuffleArray<T>(array: T[]): T[] {
@@ -197,8 +197,16 @@ export class MemStorage implements IStorage {
       } else if (hasJester && index === numSpies + (hasTriple ? 1 : 0)) {
         role = 'jester';
       }
-      // Re-rola a habilidade baseada no papel novo
-      return { ...player, role, abilities: [getRandomAbility(role)], isReady: false };
+            // Re-rola a habilidade baseada no papel novo
+      let abilities: Ability[] = [getRandomAbility(role)];
+      
+      if (role === 'spy') {
+        // Espiões recebem uma das duas habilidades novas
+        const spyAbilities = [SPY_ABILITY_SCRAMBLE, SPY_ABILITY_REVOTE];
+        abilities = [spyAbilities[Math.floor(Math.random() * spyAbilities.length)]];
+      }
+      
+      return { ...player, role, abilities, isReady: false };
     });
 
     // 3. --- CORREÇÃO IMPORTANTE ---
@@ -340,6 +348,58 @@ export class MemStorage implements IStorage {
   }
 
   async useAbility(roomId: string, playerId: string, abilityId: string, targetId?: string): Promise<{ room: Room; effect?: string } | null> {
+    const room = this.rooms.get(roomId);
+    if (!room) return null;
+
+    const player = room.players.find(p => p.id === playerId);
+    if (!player) return null;
+
+    const ability = player.abilities.find(a => a.id === abilityId);
+    if (!ability || ability.used) return null;
+
+    ability.used = true;
+
+    let effectMessage: string | undefined;
+
+    switch (abilityId) {
+      case 'scramble_fact':
+        if (room.mission?.secretFact.value) {
+          const scrambledFact = shuffleString(room.mission.secretFact.value);
+          const spyNames = room.players.filter(p => p.role === 'spy' || p.role === 'triple').map(p => p.name).join(', ');
+          
+          const message = {
+            id: randomUUID(),
+            playerId: 'SYSTEM',
+            playerName: 'SISTEMA',
+            message: `[TRANSCRIÇÃO DE LIGAÇÃO] O Fato Secreto da missão atual é: ${scrambledFact}. Espiões: ${spyNames}.`,
+            timestamp: Date.now(),
+          };
+          room.spyMessages.push(message);
+          effectMessage = `Fato Secreto embaralhado enviado para o chat secreto: ${scrambledFact}`;
+        }
+        break;
+      case 'force_revote_30s':
+        // Esta habilidade só deve ser usada na fase de voting_result
+        if (room.status === 'voting_result') {
+          room.status = 'voting'; // Volta para votação
+          room.votes = {}; // Limpa votos
+          room.players.forEach(p => p.hasVoted = false);
+          // Adiciona 30 segundos ao timer (lógica de timer deve ser implementada no cliente/websocket)
+          effectMessage = 'Revotação forçada com 30 segundos extras de discussão.';
+        } else {
+          // Se usada fora da fase, desfaz o uso da habilidade (ou não permite)
+          ability.used = false;
+          effectMessage = 'Habilidade só pode ser usada após a votação.';
+        }
+        break;
+      // ... (outras habilidades)
+    }
+
+    this.rooms.set(roomId, room);
+    return { room, effect: effectMessage };
+  }
+
+  async nextPhase(roomId: string): Promise<Room | null> {
     const room = this.rooms.get(roomId);
     if (!room) return null;
 
