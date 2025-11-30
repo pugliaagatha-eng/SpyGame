@@ -112,8 +112,8 @@ export function MuteButton() {
   return (
     <Button
       variant="ghost"
-      size="icon"
-      className="fixed top-6 left-20 z-50 bg-background/80 backdrop-blur-sm hover-elevate border border-border/50 shadow-lg"
+      size="lg"
+      className="fixed top-4 left-4 z-50 bg-background/80 backdrop-blur-sm hover-elevate border border-border/50 shadow-lg rounded-full"
       onClick={toggleMute}
       data-testid="button-mute"
     >

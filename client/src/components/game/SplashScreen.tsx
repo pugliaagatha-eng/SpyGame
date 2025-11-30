@@ -17,30 +17,30 @@ export default function SplashScreen({ onSelectMode }: SplashScreenProps) {
   const [showInstructions, setShowInstructions] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6">
       <div className="text-center mb-12 animate-float">
         <div className="relative inline-block">
-          <h1 className="font-serif text-5xl md:text-7xl font-bold tracking-wider neon-text mb-2">
+          <h1 className="font-serif text-4xl sm:text-7xl font-bold tracking-wider neon-text mb-2">
             SPY GAME
           </h1>
           <div className="absolute -bottom-2 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent" />
         </div>
-        <p className="text-muted-foreground text-lg md:text-xl mt-6 font-mono">
+        <p className="text-muted-foreground text-base sm:text-xl mt-6 font-mono">
           Descubra o espião entre vocês
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full max-w-2xl mb-8">
         <Card 
           className="neon-border cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg group"
           onClick={() => onSelectMode('online')}
           data-testid="button-mode-online"
         >
-          <CardContent className="p-8 text-center">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
-              <Wifi className="w-10 h-10 text-primary" />
+          <CardContent className="p-6 sm:p-8 text-center">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
+              <Wifi className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
             </div>
-            <h2 className="font-serif text-2xl font-bold text-primary mb-2">ONLINE</h2>
+            <h2 className="font-serif text-xl sm:text-2xl font-bold text-primary mb-2">ONLINE</h2>
             <p className="text-muted-foreground text-sm">
               Crie ou entre em uma sala virtual com jogadores remotos
             </p>
@@ -52,11 +52,11 @@ export default function SplashScreen({ onSelectMode }: SplashScreenProps) {
           onClick={() => onSelectMode('local')}
           data-testid="button-mode-local"
         >
-          <CardContent className="p-8 text-center">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-secondary/20 flex items-center justify-center group-hover:bg-secondary/30 transition-colors">
-              <Users className="w-10 h-10 text-secondary" />
+          <CardContent className="p-6 sm:p-8 text-center">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-full bg-secondary/20 flex items-center justify-center group-hover:bg-secondary/30 transition-colors">
+              <Users className="w-8 h-8 sm:w-10 sm:h-10 text-secondary" />
             </div>
-            <h2 className="font-serif text-2xl font-bold text-secondary mb-2">LOCAL</h2>
+            <h2 className="font-serif text-xl sm:text-2xl font-bold text-secondary mb-2">LOCAL</h2>}],path:
             <p className="text-muted-foreground text-sm">
               Jogue no mesmo dispositivo passando para cada jogador
             </p>

@@ -80,7 +80,7 @@ export default function RoomLobby({
       <>
         <Button
           variant="outline"
-          className="fixed top-6 left-6 z-50 bg-background/80 backdrop-blur-sm"
+          className="fixed top-4 left-4 z-50 bg-background/80 backdrop-blur-sm rounded-full"
           onClick={onBack}
           data-testid="button-leave-room"
         >
@@ -88,8 +88,8 @@ export default function RoomLobby({
           Sair da Sala
         </Button>
 
-        <div className="min-h-screen flex flex-col items-center justify-center p-6">
-          <Card className="w-full max-w-md neon-border">
+        <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6">
+          <Card className="w-full max-w-sm sm:max-w-md neon-border">
           <CardHeader className="text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Wifi className="w-5 h-5 text-primary animate-pulse" />
@@ -179,7 +179,7 @@ export default function RoomLobby({
       <>
         <Button
           variant="outline"
-          className="fixed top-6 left-6 z-50 bg-background/80 backdrop-blur-sm"
+          className="fixed top-4 left-4 z-50 bg-background/80 backdrop-blur-sm rounded-full"
           onClick={onBack}
           data-testid="button-back-main"
         >
@@ -187,10 +187,10 @@ export default function RoomLobby({
           Voltar
         </Button>
 
-        <div className="min-h-screen flex flex-col items-center justify-center p-6">
+        <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6">
           <h2 className="font-serif text-3xl font-bold neon-text mb-8">Modo Online</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full max-w-xl">
             <Card 
               className="neon-border cursor-pointer transition-all hover:scale-105"
               onClick={() => setMode('create')}
@@ -228,7 +228,7 @@ export default function RoomLobby({
     <>
       <Button
         variant="outline"
-        className="fixed top-6 left-6 z-50 bg-background/80 backdrop-blur-sm"
+        className="fixed top-4 left-4 z-50 bg-background/80 backdrop-blur-sm rounded-full"
         onClick={() => setMode('select')}
         data-testid="button-back-select"
       >
@@ -236,8 +236,8 @@ export default function RoomLobby({
         Voltar
       </Button>
 
-      <div className="min-h-screen flex flex-col items-center justify-center p-6">
-        <Card className="w-full max-w-sm neon-border">
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6">
+        <Card className="w-full max-w-xs sm:max-w-sm neon-border">
           <CardHeader>
             <CardTitle className="font-serif text-2xl text-center">
               {mode === 'create' ? 'Criar Sala' : 'Entrar na Sala'}

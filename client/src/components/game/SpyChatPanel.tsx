@@ -65,17 +65,17 @@ export default function SpyChatPanel({
     return (
       <Button
         variant="outline"
-        className="fixed bottom-24 right-6 z-50 bg-red-900/80 backdrop-blur-sm border-red-500/50 text-red-300 hover:bg-red-800/80 hover:text-red-200 shadow-lg shadow-red-500/20"
+        className="fixed bottom-4 right-4 z-50 bg-red-900/80 backdrop-blur-sm border-red-500/50 text-red-300 hover:bg-red-800/80 hover:text-red-200 shadow-lg shadow-red-500/20 rounded-full w-16 h-16 p-0"
         onClick={onToggleMinimize}
       >
-        <Eye className="w-4 h-4 mr-2" />
-        Mensagem Secreta para Espiões
+        <Eye className="w-6 h-6" />
+        
       </Button>
     );
   }
 
   return (
-    <Card className="fixed bottom-24 right-6 z-50 w-80 h-96 bg-red-950/95 backdrop-blur-sm border-red-500/50 flex flex-col shadow-lg shadow-red-500/20">
+    <Card className="fixed bottom-4 right-4 z-50 w-80 h-96 bg-red-950/95 backdrop-blur-sm border-red-500/50 flex flex-col shadow-lg shadow-red-500/20">
       <div className="flex items-center justify-between p-3 border-b border-red-500/30">
         <div className="flex items-center gap-2">
           <Eye className="w-4 h-4 text-red-400" />

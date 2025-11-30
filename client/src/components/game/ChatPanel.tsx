@@ -66,7 +66,7 @@ export default function ChatPanel({
     return (
       <Button
         variant="outline"
-        className="fixed bottom-6 right-6 z-50 bg-background/80 backdrop-blur-sm rounded-full w-14 h-14 p-0"
+        className="fixed bottom-4 left-4 z-50 bg-background/80 backdrop-blur-sm rounded-full w-16 h-16 p-0 shadow-lg hover-elevate"
         onClick={onToggleMinimize}
       >
         <MessageCircle className="w-6 h-6" />
@@ -75,7 +75,7 @@ export default function ChatPanel({
   }
 
   return (
-    <Card className="fixed bottom-6 right-6 z-50 w-80 h-96 bg-background/95 backdrop-blur-sm border-primary/30 flex flex-col">
+    <Card className="fixed bottom-4 left-4 z-50 w-80 h-96 bg-background/95 backdrop-blur-sm border-primary/30 flex flex-col shadow-2xl">
       <div className="flex items-center justify-between p-3 border-b border-border">
         <div className="flex items-center gap-2">
           <MessageCircle className="w-4 h-4 text-primary" />
