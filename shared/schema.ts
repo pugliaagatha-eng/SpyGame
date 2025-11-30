@@ -36,9 +36,12 @@ export interface Player {
 }
 
 export interface SecretFact {
-  type: 'emoji' | 'code' | 'gesture' | 'word';
+  type: 'emoji' | 'code' | 'gesture' | 'word' | 'ranking' | 'explanation';
   value: string;
   hint: string;
+  spyValue?: string; // Para missões de Explicação - valor diferente para espiões
+  rankingItems?: string[]; // Para missões de Ranking
+  rankingCriteria?: string; // Critério de ordenação
 }
 
 export interface Mission {
@@ -47,12 +50,23 @@ export interface Mission {
   description: string;
   secretFact: SecretFact;
   duration: number;
+  localOnly?: boolean; // Se true, só aparece no modo local
+  onlineOnly?: boolean; // Se true, só aparece no modo online
 }
 
 export interface DrawingData {
   playerId: string;
   playerName: string;
   imageData: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  playerId: string;
+  playerName: string;
+  message: string;
+  emoji?: string;
+  timestamp: number;
 }
 
 export interface Room {
@@ -115,22 +129,37 @@ export interface WebSocketMessage {
   playerId?: string;
 }
 
-export interface ChatMessage {
-  id: string;
-  playerId: string;
-  playerName: string;
-  message: string;
-  emoji?: string;
-  timestamp: number;
-}
-
 export const ABILITIES: Ability[] = [
   { id: 'spy_vote', name: 'Espiar Voto', description: 'Veja o voto de um jogador', icon: 'Eye', used: false },
-  { id: 'extra_time', name: 'Tempo Extra', description: 'Adicione 30 segundos ao timer de discussão', icon: 'Clock', used: false },
+  { id: 'swap_vote', name: 'Trocar Voto', description: 'Troque seu voto depois de ver o resultado parcial', icon: 'Repeat', used: false },
+  { id: 'extra_time', name: 'Tempo Extra', description: 'Adicione 30 segundos ao timer', icon: 'Clock', used: false },
   { id: 'force_revote', name: 'Revotação', description: 'Force uma nova votação', icon: 'RotateCcw', used: false },
   { id: 'peek_role', name: 'Revelar Papel', description: 'Veja o papel de um jogador', icon: 'Search', used: false },
   { id: 'shield', name: 'Escudo', description: 'Proteja-se da eliminação por uma rodada', icon: 'Shield', used: false },
 ];
+
+export const ROLE_INFO: Record<PlayerRole, { name: string; color: string; description: string }> = {
+  agent: {
+    name: 'Agente',
+    color: 'text-cyan-400 border-cyan-400',
+    description: 'Você conhece a palavra secreta. Identifique os espiões e vote para eliminá-los.',
+  },
+  spy: {
+    name: 'Espião',
+    color: 'text-red-400 border-red-400',
+    description: 'Você NÃO conhece a palavra secreta. Tente descobri-la e se misturar aos agentes.',
+  },
+  triple: {
+    name: 'Agente Triplo',
+    color: 'text-purple-400 border-purple-400',
+    description: 'Você conhece a palavra, mas vence com os espiões. Ajude-os sem se revelar.',
+  },
+  jester: {
+    name: 'Tolo',
+    color: 'text-amber-400 border-amber-400',
+    description: 'Você vence se for eliminado! Aja de forma suspeita e atraia votos.',
+  },
+};
 
 export const JESTER_ABILITY: Ability = { 
   id: 'negative_vote', 
@@ -162,275 +191,99 @@ export function getRandomAbility(role?: PlayerRole): Ability {
     }
   }
   
-  // Todas as habilidades têm a mesma chance agora
-  return { ...ABILITIES[Math.floor(Math.random() * ABILITIES.length)], used: false };
+  const availableAbilities = ABILITIES.filter(a => a.id !== 'shield');
+  return { ...availableAbilities[Math.floor(Math.random() * availableAbilities.length)], used: false };
 }
 
-export type MissionCategory = 'palavra' | 'desenho' | 'gesto' | 'codigo' | 'local' | 'som' | 'historia' | 'objeto' | 'personagem' | 'acao';
+export type MissionCategory = 'palavra' | 'desenho' | 'gesto' | 'codigo' | 'local' | 'som' | 'historia' | 'objeto' | 'personagem' | 'acao' | 'ranking' | 'explicacao';
+
+// Missões de Explicação - Agentes recebem palavra específica, Espiões recebem palavra parecida
+export const EXPLANATION_MISSIONS: Mission[] = [
+  { id: 1001, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Suco de maracujá', hint: 'Bebida de fruta', spyValue: 'Suco de laranja' }, duration: 90 },
+  { id: 1002, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Pizza de calabresa', hint: 'Comida italiana', spyValue: 'Pizza de pepperoni' }, duration: 90 },
+  { id: 1003, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Café com leite', hint: 'Bebida quente', spyValue: 'Cappuccino' }, duration: 90 },
+  { id: 1004, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Bicicleta de montanha', hint: 'Veículo de duas rodas', spyValue: 'Bicicleta de corrida' }, duration: 90 },
+  { id: 1005, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Violão acústico', hint: 'Instrumento musical', spyValue: 'Guitarra elétrica' }, duration: 90 },
+  { id: 1006, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Pão francês', hint: 'Produto de padaria', spyValue: 'Pão de forma' }, duration: 90 },
+  { id: 1007, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Tênis de corrida', hint: 'Calçado esportivo', spyValue: 'Chuteira de futebol' }, duration: 90 },
+  { id: 1008, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Cachorro pastor alemão', hint: 'Animal de estimação', spyValue: 'Cachorro labrador' }, duration: 90 },
+  { id: 1009, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Sorvete de chocolate', hint: 'Sobremesa gelada', spyValue: 'Sorvete de baunilha' }, duration: 90 },
+  { id: 1010, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Carro elétrico', hint: 'Veículo moderno', spyValue: 'Carro híbrido' }, duration: 90 },
+  { id: 1011, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Filme de terror', hint: 'Gênero cinematográfico', spyValue: 'Filme de suspense' }, duration: 90 },
+  { id: 1012, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Praia do Caribe', hint: 'Destino de viagem', spyValue: 'Praia do Mediterrâneo' }, duration: 90 },
+  { id: 1013, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Hambúrguer artesanal', hint: 'Fast food', spyValue: 'Hambúrguer fast food' }, duration: 90 },
+  { id: 1014, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Cerveja artesanal', hint: 'Bebida alcoólica', spyValue: 'Cerveja industrial' }, duration: 90 },
+  { id: 1015, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Smartphone Android', hint: 'Dispositivo eletrônico', spyValue: 'iPhone' }, duration: 90 },
+  { id: 1016, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Yoga relaxante', hint: 'Exercício físico', spyValue: 'Pilates' }, duration: 90 },
+  { id: 1017, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Música clássica', hint: 'Gênero musical', spyValue: 'Música instrumental' }, duration: 90 },
+  { id: 1018, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Livro de ficção científica', hint: 'Tipo de literatura', spyValue: 'Livro de fantasia' }, duration: 90 },
+  { id: 1019, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Sapato social', hint: 'Calçado formal', spyValue: 'Mocassim' }, duration: 90 },
+  { id: 1020, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Jantar romântico', hint: 'Refeição especial', spyValue: 'Jantar de aniversário' }, duration: 90 },
+];
+
+// Missões de Ranking Secreto - Ordenar itens por critério secreto
+export const RANKING_MISSIONS: Mission[] = [
+  { id: 2001, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do menor ao maior', hint: 'Critério de tamanho', rankingItems: ['Formiga', 'Gato', 'Elefante', 'Baleia'], rankingCriteria: 'tamanho' }, duration: 90 },
+  { id: 2002, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais frio ao mais quente', hint: 'Critério de temperatura', rankingItems: ['Antártida', 'Brasil', 'Egito', 'Vulcão'], rankingCriteria: 'temperatura' }, duration: 90 },
+  { id: 2003, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais antigo ao mais novo', hint: 'Critério de idade', rankingItems: ['Pirâmides', 'Coliseu', 'Torre Eiffel', 'Burj Khalifa'], rankingCriteria: 'idade' }, duration: 90 },
+  { id: 2004, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais lento ao mais rápido', hint: 'Critério de velocidade', rankingItems: ['Tartaruga', 'Humano', 'Cavalo', 'Guepardo'], rankingCriteria: 'velocidade' }, duration: 90 },
+  { id: 2005, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais barato ao mais caro', hint: 'Critério de preço', rankingItems: ['Chiclete', 'Pizza', 'Smartphone', 'Carro'], rankingCriteria: 'preço' }, duration: 90 },
+  { id: 2006, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais leve ao mais pesado', hint: 'Critério de peso', rankingItems: ['Pena', 'Maçã', 'Tijolo', 'Carro'], rankingCriteria: 'peso' }, duration: 90 },
+  { id: 2007, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do menor ao maior população', hint: 'Critério de população', rankingItems: ['Vaticano', 'Portugal', 'Brasil', 'China'], rankingCriteria: 'população' }, duration: 90 },
+  { id: 2008, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais curto ao mais longo', hint: 'Critério de duração', rankingItems: ['Segundo', 'Minuto', 'Hora', 'Dia'], rankingCriteria: 'duração' }, duration: 90 },
+  { id: 2009, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do menos doce ao mais doce', hint: 'Critério de doçura', rankingItems: ['Limão', 'Maçã', 'Banana', 'Mel'], rankingCriteria: 'doçura' }, duration: 90 },
+  { id: 2010, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais baixo ao mais alto', hint: 'Critério de altura', rankingItems: ['Grama', 'Casa', 'Prédio', 'Montanha'], rankingCriteria: 'altura' }, duration: 90 },
+  { id: 2011, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais silencioso ao mais barulhento', hint: 'Critério de volume', rankingItems: ['Sussurro', 'Conversa', 'Grito', 'Trovão'], rankingCriteria: 'volume' }, duration: 90 },
+  { id: 2012, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do menos perigoso ao mais perigoso', hint: 'Critério de perigo', rankingItems: ['Coelho', 'Cachorro', 'Lobo', 'Leão'], rankingCriteria: 'perigo' }, duration: 90 },
+  { id: 2013, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais simples ao mais complexo', hint: 'Critério de complexidade', rankingItems: ['Pedra', 'Planta', 'Animal', 'Humano'], rankingCriteria: 'complexidade' }, duration: 90 },
+  { id: 2014, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais próximo ao mais distante do Sol', hint: 'Critério de distância', rankingItems: ['Mercúrio', 'Terra', 'Júpiter', 'Netuno'], rankingCriteria: 'distância do sol' }, duration: 90 },
+  { id: 2015, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do menos calórico ao mais calórico', hint: 'Critério de calorias', rankingItems: ['Pepino', 'Arroz', 'Chocolate', 'Bacon'], rankingCriteria: 'calorias' }, duration: 90 },
+];
 
 export const MISSIONS: Mission[] = [
   // PALAVRA CHAVE (30 missões)
   { id: 1, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'MATRIX', hint: 'Um filme sobre simulação' }, duration: 90 },
   { id: 2, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'DRAGÃO', hint: 'Criatura mítica que cospe fogo' }, duration: 90 },
-  { id: 3, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'ASTRONAUTA', hint: 'Viaja para o espaço' }, duration: 90 },
-  { id: 4, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'RELÓGIO', hint: 'Marca o tempo' }, duration: 90 },
-  { id: 5, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'ARCO-ÍRIS', hint: 'Fenômeno colorido após a chuva' }, duration: 90 },
-  { id: 6, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'VAMPIRO', hint: 'Criatura noturna que bebe sangue' }, duration: 90 },
-  { id: 7, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'FANTASMA', hint: 'Espírito que assombra' }, duration: 90 },
-  { id: 8, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'PIRATA', hint: 'Navegador dos mares' }, duration: 90 },
-  { id: 9, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'TORNADO', hint: 'Fenômeno climático giratório' }, duration: 90 },
-  { id: 10, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'DIAMANTE', hint: 'Pedra preciosa brilhante' }, duration: 90 },
-  { id: 11, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'SEREIA', hint: 'Metade humana, metade peixe' }, duration: 90 },
-  { id: 12, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'VULCÃO', hint: 'Montanha que cospe lava' }, duration: 90 },
-  { id: 13, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'ESPELHO', hint: 'Reflete imagens' }, duration: 90 },
-  { id: 14, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'LABIRINTO', hint: 'Caminho confuso com paredes' }, duration: 90 },
-  { id: 15, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'ECLIPSE', hint: 'Fenômeno celestial de sombra' }, duration: 90 },
-  { id: 16, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'ZUMBI', hint: 'Morto que anda' }, duration: 90 },
-  { id: 17, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'NINJA', hint: 'Guerreiro das sombras' }, duration: 90 },
-  { id: 18, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'BRUXA', hint: 'Faz poções mágicas' }, duration: 90 },
-  { id: 19, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'SAMURAI', hint: 'Guerreiro japonês com espada' }, duration: 90 },
-  { id: 20, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'FÓSSIL', hint: 'Resto antigo de seres vivos' }, duration: 90 },
-  { id: 21, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'METEORO', hint: 'Rocha espacial que cai' }, duration: 90 },
-  { id: 22, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'GLADIADOR', hint: 'Lutador da arena romana' }, duration: 90 },
-  { id: 23, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'FARAÓ', hint: 'Rei do antigo Egito' }, duration: 90 },
-  { id: 24, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'ICEBERG', hint: 'Montanha de gelo flutuante' }, duration: 90 },
-  { id: 25, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'ORIGAMI', hint: 'Arte de dobrar papel' }, duration: 90 },
-  { id: 26, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'AVALANCHE', hint: 'Deslizamento de neve' }, duration: 90 },
-  { id: 27, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'ROBÔ', hint: 'Máquina automática' }, duration: 90 },
-  { id: 28, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'TESOURO', hint: 'Riqueza escondida' }, duration: 90 },
-  { id: 29, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'FEITICEIRO', hint: 'Mago poderoso' }, duration: 90 },
-  { id: 30, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'PORTAL', hint: 'Passagem para outro lugar' }, duration: 90 },
-
-  // DESENHO SECRETO (30 missões)
-  { id: 31, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'PIZZA', hint: 'Algo que se divide em fatias' }, duration: 60 },
-  { id: 32, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'CASTELO', hint: 'Construção com torres altas' }, duration: 60 },
-  { id: 33, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'SUBMARINO', hint: 'Navega onde não se vê o sol' }, duration: 60 },
-  { id: 34, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'FOGUETE', hint: 'Deixa um rastro de fumaça' }, duration: 60 },
-  { id: 35, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'PALMEIRA', hint: 'Tem folhas mas não é livro' }, duration: 60 },
-  { id: 36, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'GUITARRA', hint: 'Tem cordas mas não é sapato' }, duration: 60 },
-  { id: 37, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'BICICLETA', hint: 'Tem pedais e guidon' }, duration: 60 },
-  { id: 38, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'TUBARÃO', hint: 'Tem barbatanas e dentes afiados' }, duration: 60 },
-  { id: 39, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'CACHOEIRA', hint: 'Flui de cima para baixo' }, duration: 60 },
-  { id: 40, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'HELICÓPTERO', hint: 'Voa mas não tem asas' }, duration: 60 },
-  { id: 41, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'CORUJA', hint: 'Ave noturna sábia' }, duration: 60 },
-  { id: 42, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'PIRÂMIDE', hint: 'Construção egípcia triangular' }, duration: 60 },
-  { id: 43, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'BALEIA', hint: 'Maior mamífero marinho' }, duration: 60 },
-  { id: 44, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'ÂNCORA', hint: 'Segura navios no lugar' }, duration: 60 },
-  { id: 45, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'MICROSCÓPIO', hint: 'Amplia coisas pequenas' }, duration: 60 },
-  { id: 46, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'DRAGÃO', hint: 'Criatura mítica voadora' }, duration: 60 },
-  { id: 47, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'CAVERNA', hint: 'Buraco na montanha' }, duration: 60 },
-  { id: 48, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'FAROL', hint: 'Torre com luz para navios' }, duration: 60 },
-  { id: 49, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'PINGUIM', hint: 'Ave que não voa, do frio' }, duration: 60 },
-  { id: 50, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'VULCÃO', hint: 'Montanha de lava' }, duration: 60 },
-  { id: 51, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'TRATOR', hint: 'Veículo de fazenda' }, duration: 60 },
-  { id: 52, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'XADREZ', hint: 'Jogo de tabuleiro estratégico' }, duration: 60 },
-  { id: 53, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'TELESCÓPIO', hint: 'Observa estrelas' }, duration: 60 },
-  { id: 54, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'MORCEGO', hint: 'Mamífero voador noturno' }, duration: 60 },
-  { id: 55, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'RODA GIGANTE', hint: 'Atração de parque de diversões' }, duration: 60 },
-  { id: 56, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'IGLU', hint: 'Casa de gelo' }, duration: 60 },
-  { id: 57, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'CANGURU', hint: 'Animal australiano saltador' }, duration: 60 },
-  { id: 58, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'MONTANHA RUSSA', hint: 'Atração radical de parque' }, duration: 60 },
-  { id: 59, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'AMPULHETA', hint: 'Mede tempo com areia' }, duration: 60 },
-  { id: 60, title: 'Desenho Secreto', description: 'Todos devem desenhar o conceito secreto revelado. Agentes sabem o que desenhar, espiões devem deduzir observando.', secretFact: { type: 'word', value: 'POLVO', hint: 'Animal marinho com tentáculos' }, duration: 60 },
-
-  // GESTO SECRETO (25 missões)
-  { id: 61, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Tocar o nariz', hint: 'Algo no rosto' }, duration: 90 },
-  { id: 62, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Coçar a orelha', hint: 'Algo na cabeça' }, duration: 90 },
-  { id: 63, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Cruzar os braços', hint: 'Movimento com os membros superiores' }, duration: 90 },
-  { id: 64, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Piscar o olho', hint: 'Algo com os olhos' }, duration: 90 },
-  { id: 65, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Esfregar as mãos', hint: 'Movimento repetitivo' }, duration: 90 },
-  { id: 66, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Tocar o queixo', hint: 'Gesto de pensador' }, duration: 90 },
-  { id: 67, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Bater na mesa', hint: 'Som de impacto' }, duration: 90 },
-  { id: 68, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Fazer sinal de positivo', hint: 'Gesto de aprovação' }, duration: 90 },
-  { id: 69, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Olhar para o teto', hint: 'Direção para cima' }, duration: 90 },
-  { id: 70, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Apoiar a cabeça na mão', hint: 'Posição de descanso' }, duration: 90 },
-  { id: 71, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Mexer no cabelo', hint: 'Toque na cabeça' }, duration: 90 },
-  { id: 72, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Estalar os dedos', hint: 'Som com as mãos' }, duration: 90 },
-  { id: 73, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Levantar as sobrancelhas', hint: 'Expressão facial' }, duration: 90 },
-  { id: 74, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Cobrir a boca ao falar', hint: 'Gesto de segredo' }, duration: 90 },
-  { id: 75, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Entrelaçar os dedos', hint: 'Mãos juntas' }, duration: 90 },
-  { id: 76, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Fazer círculos com o dedo', hint: 'Movimento circular' }, duration: 90 },
-  { id: 77, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Colocar a mão no peito', hint: 'Gesto de sinceridade' }, duration: 90 },
-  { id: 78, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Fazer sinal de silêncio', hint: 'Dedo nos lábios' }, duration: 90 },
-  { id: 79, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Tamborilar na mesa', hint: 'Som rítmico' }, duration: 90 },
-  { id: 80, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Bocejar fingidamente', hint: 'Expressão de cansaço' }, duration: 90 },
-  { id: 81, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Fazer sinal de telefone', hint: 'Mão na orelha' }, duration: 90 },
-  { id: 82, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Ajeitar os óculos', hint: 'Toque no rosto' }, duration: 90 },
-  { id: 83, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Cruzar as pernas', hint: 'Mudança de postura' }, duration: 90 },
-  { id: 84, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Fazer sinal de OK', hint: 'Círculo com os dedos' }, duration: 90 },
-  { id: 85, title: 'Gesto Secreto', description: 'Agentes conhecem um gesto específico que devem realizar durante a discussão. Espiões devem observar e identificar o padrão.', secretFact: { type: 'gesture', value: 'Balançar a cabeça lentamente', hint: 'Movimento de negação suave' }, duration: 90 },
-
-  // CÓDIGO NUMÉRICO (20 missões)
-  { id: 86, title: 'Código Numérico', description: 'Agentes conhecem um número específico que deve ser mencionado naturalmente durante a discussão. Espiões devem descobrir qual é.', secretFact: { type: 'code', value: '42', hint: 'A resposta para tudo' }, duration: 90 },
-  { id: 87, title: 'Código Numérico', description: 'Agentes conhecem um número específico que deve ser mencionado naturalmente durante a discussão. Espiões devem descobrir qual é.', secretFact: { type: 'code', value: '7', hint: 'Número da sorte' }, duration: 90 },
-  { id: 88, title: 'Código Numérico', description: 'Agentes conhecem um número específico que deve ser mencionado naturalmente durante a discussão. Espiões devem descobrir qual é.', secretFact: { type: 'code', value: '13', hint: 'Número supersticioso' }, duration: 90 },
-  { id: 89, title: 'Código Numérico', description: 'Agentes conhecem um número específico que deve ser mencionado naturalmente durante a discussão. Espiões devem descobrir qual é.', secretFact: { type: 'code', value: '99', hint: 'Quase cem' }, duration: 90 },
-  { id: 90, title: 'Código Numérico', description: 'Agentes conhecem um número específico que deve ser mencionado naturalmente durante a discussão. Espiões devem descobrir qual é.', secretFact: { type: 'code', value: '21', hint: 'Blackjack perfeito' }, duration: 90 },
-  { id: 91, title: 'Código Numérico', description: 'Agentes conhecem um número específico que deve ser mencionado naturalmente durante a discussão. Espiões devem descobrir qual é.', secretFact: { type: 'code', value: '88', hint: 'Número da volta no tempo' }, duration: 90 },
-  { id: 92, title: 'Código Numérico', description: 'Agentes conhecem um número específico que deve ser mencionado naturalmente durante a discussão. Espiões devem descobrir qual é.', secretFact: { type: 'code', value: '3', hint: 'Número mágico' }, duration: 90 },
-  { id: 93, title: 'Código Numérico', description: 'Agentes conhecem um número específico que deve ser mencionado naturalmente durante a discussão. Espiões devem descobrir qual é.', secretFact: { type: 'code', value: '50', hint: 'Metade de cem' }, duration: 90 },
-  { id: 94, title: 'Código Numérico', description: 'Agentes conhecem um número específico que deve ser mencionado naturalmente durante a discussão. Espiões devem descobrir qual é.', secretFact: { type: 'code', value: '11', hint: 'Número de jogadores de futebol' }, duration: 90 },
-  { id: 95, title: 'Código Numérico', description: 'Agentes conhecem um número específico que deve ser mencionado naturalmente durante a discussão. Espiões devem descobrir qual é.', secretFact: { type: 'code', value: '5', hint: 'Dedos de uma mão' }, duration: 90 },
-  { id: 96, title: 'Código Numérico', description: 'Agentes conhecem um número específico que deve ser mencionado naturalmente durante a discussão. Espiões devem descobrir qual é.', secretFact: { type: 'code', value: '100', hint: 'Um século' }, duration: 90 },
-  { id: 97, title: 'Código Numérico', description: 'Agentes conhecem um número específico que deve ser mencionado naturalmente durante a discussão. Espiões devem descobrir qual é.', secretFact: { type: 'code', value: '24', hint: 'Horas do dia' }, duration: 90 },
-  { id: 98, title: 'Código Numérico', description: 'Agentes conhecem um número específico que deve ser mencionado naturalmente durante a discussão. Espiões devem descobrir qual é.', secretFact: { type: 'code', value: '365', hint: 'Dias do ano' }, duration: 90 },
-  { id: 99, title: 'Código Numérico', description: 'Agentes conhecem um número específico que deve ser mencionado naturalmente durante a discussão. Espiões devem descobrir qual é.', secretFact: { type: 'code', value: '12', hint: 'Meses do ano' }, duration: 90 },
-  { id: 100, title: 'Código Numérico', description: 'Agentes conhecem um número específico que deve ser mencionado naturalmente durante a discussão. Espiões devem descobrir qual é.', secretFact: { type: 'code', value: '1984', hint: 'Romance distópico de Orwell' }, duration: 90 },
-  { id: 101, title: 'Código Numérico', description: 'Agentes conhecem um número específico que deve ser mencionado naturalmente durante a discussão. Espiões devem descobrir qual é.', secretFact: { type: 'code', value: '666', hint: 'Número do mal' }, duration: 90 },
-  { id: 102, title: 'Código Numérico', description: 'Agentes conhecem um número específico que deve ser mencionado naturalmente durante a discussão. Espiões devem descobrir qual é.', secretFact: { type: 'code', value: '007', hint: 'Espião famoso' }, duration: 90 },
-  { id: 103, title: 'Código Numérico', description: 'Agentes conhecem um número específico que deve ser mencionado naturalmente durante a discussão. Espiões devem descobrir qual é.', secretFact: { type: 'code', value: '69', hint: 'Número invertível' }, duration: 90 },
-  { id: 104, title: 'Código Numérico', description: 'Agentes conhecem um número específico que deve ser mencionado naturalmente durante a discussão. Espiões devem descobrir qual é.', secretFact: { type: 'code', value: '404', hint: 'Erro de página não encontrada' }, duration: 90 },
-  { id: 105, title: 'Código Numérico', description: 'Agentes conhecem um número específico que deve ser mencionado naturalmente durante a discussão. Espiões devem descobrir qual é.', secretFact: { type: 'code', value: '2001', hint: 'Odisseia no espaço' }, duration: 90 },
-
-  // LOCAL SECRETO - NOVA CATEGORIA (20 missões)
-  { id: 106, title: 'Local Secreto', description: 'Agentes conhecem um local secreto. Descrevam-no sem dizer o nome.', secretFact: { type: 'word', value: 'BIBLIOTECA', hint: 'Lugar cheio de livros' }, duration: 90 },
-  { id: 107, title: 'Local Secreto', description: 'Agentes conhecem um local secreto. Descrevam-no sem dizer o nome.', secretFact: { type: 'word', value: 'HOSPITAL', hint: 'Onde tratam doentes' }, duration: 90 },
-  { id: 108, title: 'Local Secreto', description: 'Agentes conhecem um local secreto. Descrevam-no sem dizer o nome.', secretFact: { type: 'word', value: 'AEROPORTO', hint: 'Aviões decolam e pousam' }, duration: 90 },
-  { id: 109, title: 'Local Secreto', description: 'Agentes conhecem um local secreto. Descrevam-no sem dizer o nome.', secretFact: { type: 'word', value: 'PRAIA', hint: 'Areia e mar' }, duration: 90 },
-  { id: 110, title: 'Local Secreto', description: 'Agentes conhecem um local secreto. Descrevam-no sem dizer o nome.', secretFact: { type: 'word', value: 'CINEMA', hint: 'Assiste filmes na tela grande' }, duration: 90 },
-  { id: 111, title: 'Local Secreto', description: 'Agentes conhecem um local secreto. Descrevam-no sem dizer o nome.', secretFact: { type: 'word', value: 'SUPERMERCADO', hint: 'Compra comida e produtos' }, duration: 90 },
-  { id: 112, title: 'Local Secreto', description: 'Agentes conhecem um local secreto. Descrevam-no sem dizer o nome.', secretFact: { type: 'word', value: 'MUSEU', hint: 'Obras de arte e história' }, duration: 90 },
-  { id: 113, title: 'Local Secreto', description: 'Agentes conhecem um local secreto. Descrevam-no sem dizer o nome.', secretFact: { type: 'word', value: 'ZOOLÓGICO', hint: 'Animais em exposição' }, duration: 90 },
-  { id: 114, title: 'Local Secreto', description: 'Agentes conhecem um local secreto. Descrevam-no sem dizer o nome.', secretFact: { type: 'word', value: 'PARQUE', hint: 'Área verde com árvores' }, duration: 90 },
-  { id: 115, title: 'Local Secreto', description: 'Agentes conhecem um local secreto. Descrevam-no sem dizer o nome.', secretFact: { type: 'word', value: 'ESTÁDIO', hint: 'Jogos e multidões' }, duration: 90 },
-  { id: 116, title: 'Local Secreto', description: 'Agentes conhecem um local secreto. Descrevam-no sem dizer o nome.', secretFact: { type: 'word', value: 'CASSINO', hint: 'Jogos de azar' }, duration: 90 },
-  { id: 117, title: 'Local Secreto', description: 'Agentes conhecem um local secreto. Descrevam-no sem dizer o nome.', secretFact: { type: 'word', value: 'DELEGACIA', hint: 'Policiais trabalham aqui' }, duration: 90 },
-  { id: 118, title: 'Local Secreto', description: 'Agentes conhecem um local secreto. Descrevam-no sem dizer o nome.', secretFact: { type: 'word', value: 'IGREJA', hint: 'Lugar de oração' }, duration: 90 },
-  { id: 119, title: 'Local Secreto', description: 'Agentes conhecem um local secreto. Descrevam-no sem dizer o nome.', secretFact: { type: 'word', value: 'BANCO', hint: 'Guarda dinheiro' }, duration: 90 },
-  { id: 120, title: 'Local Secreto', description: 'Agentes conhecem um local secreto. Descrevam-no sem dizer o nome.', secretFact: { type: 'word', value: 'ESCOLA', hint: 'Alunos aprendem' }, duration: 90 },
-  { id: 121, title: 'Local Secreto', description: 'Agentes conhecem um local secreto. Descrevam-no sem dizer o nome.', secretFact: { type: 'word', value: 'RESTAURANTE', hint: 'Serve refeições' }, duration: 90 },
-  { id: 122, title: 'Local Secreto', description: 'Agentes conhecem um local secreto. Descrevam-no sem dizer o nome.', secretFact: { type: 'word', value: 'ACADEMIA', hint: 'Treino físico' }, duration: 90 },
-  { id: 123, title: 'Local Secreto', description: 'Agentes conhecem um local secreto. Descrevam-no sem dizer o nome.', secretFact: { type: 'word', value: 'SHOPPING', hint: 'Várias lojas juntas' }, duration: 90 },
-  { id: 124, title: 'Local Secreto', description: 'Agentes conhecem um local secreto. Descrevam-no sem dizer o nome.', secretFact: { type: 'word', value: 'CEMITÉRIO', hint: 'Descanso eterno' }, duration: 90 },
-  { id: 125, title: 'Local Secreto', description: 'Agentes conhecem um local secreto. Descrevam-no sem dizer o nome.', secretFact: { type: 'word', value: 'CIRCO', hint: 'Palhaços e acrobatas' }, duration: 90 },
-
-  // SOM SECRETO - NOVA CATEGORIA (15 missões)
-  { id: 126, title: 'Som Secreto', description: 'Agentes devem imitar um som específico durante a discussão.', secretFact: { type: 'word', value: 'TOSSE', hint: 'Som de doença' }, duration: 90 },
-  { id: 127, title: 'Som Secreto', description: 'Agentes devem imitar um som específico durante a discussão.', secretFact: { type: 'word', value: 'ASSOBIO', hint: 'Som com os lábios' }, duration: 90 },
-  { id: 128, title: 'Som Secreto', description: 'Agentes devem imitar um som específico durante a discussão.', secretFact: { type: 'word', value: 'SUSPIRO', hint: 'Som de cansaço ou alívio' }, duration: 90 },
-  { id: 129, title: 'Som Secreto', description: 'Agentes devem imitar um som específico durante a discussão.', secretFact: { type: 'word', value: 'RISADA', hint: 'Som de alegria' }, duration: 90 },
-  { id: 130, title: 'Som Secreto', description: 'Agentes devem imitar um som específico durante a discussão.', secretFact: { type: 'word', value: 'ESPIRRO', hint: 'Som repentino do nariz' }, duration: 90 },
-  { id: 131, title: 'Som Secreto', description: 'Agentes devem imitar um som específico durante a discussão.', secretFact: { type: 'word', value: 'GATO MIANDO', hint: 'Som de felino' }, duration: 90 },
-  { id: 132, title: 'Som Secreto', description: 'Agentes devem imitar um som específico durante a discussão.', secretFact: { type: 'word', value: 'CACHORRO LATINDO', hint: 'Som de canino' }, duration: 90 },
-  { id: 133, title: 'Som Secreto', description: 'Agentes devem imitar um som específico durante a discussão.', secretFact: { type: 'word', value: 'CAMPAINHA', hint: 'Som na porta' }, duration: 90 },
-  { id: 134, title: 'Som Secreto', description: 'Agentes devem imitar um som específico durante a discussão.', secretFact: { type: 'word', value: 'TROVÃO', hint: 'Som de tempestade' }, duration: 90 },
-  { id: 135, title: 'Som Secreto', description: 'Agentes devem imitar um som específico durante a discussão.', secretFact: { type: 'word', value: 'SIRENE', hint: 'Som de emergência' }, duration: 90 },
-  { id: 136, title: 'Som Secreto', description: 'Agentes devem imitar um som específico durante a discussão.', secretFact: { type: 'word', value: 'APLAUSOS', hint: 'Som de aprovação' }, duration: 90 },
-  { id: 137, title: 'Som Secreto', description: 'Agentes devem imitar um som específico durante a discussão.', secretFact: { type: 'word', value: 'BATER PALMAS', hint: 'Som ritmado com mãos' }, duration: 90 },
-  { id: 138, title: 'Som Secreto', description: 'Agentes devem imitar um som específico durante a discussão.', secretFact: { type: 'word', value: 'RONCO', hint: 'Som de sono profundo' }, duration: 90 },
-  { id: 139, title: 'Som Secreto', description: 'Agentes devem imitar um som específico durante a discussão.', secretFact: { type: 'word', value: 'TELEFONE TOCANDO', hint: 'Som de chamada' }, duration: 90 },
-  { id: 140, title: 'Som Secreto', description: 'Agentes devem imitar um som específico durante a discussão.', secretFact: { type: 'word', value: 'ÁGUA CORRENDO', hint: 'Som líquido' }, duration: 90 },
-
-  // HISTÓRIA INVENTADA - NOVA CATEGORIA (15 missões)
-  { id: 141, title: 'História Inventada', description: 'Agentes devem contar uma história curta incluindo o elemento secreto.', secretFact: { type: 'word', value: 'CHAVE DE OURO', hint: 'Objeto que abre portas especiais' }, duration: 120 },
-  { id: 142, title: 'História Inventada', description: 'Agentes devem contar uma história curta incluindo o elemento secreto.', secretFact: { type: 'word', value: 'PASSAGEM SECRETA', hint: 'Caminho escondido' }, duration: 120 },
-  { id: 143, title: 'História Inventada', description: 'Agentes devem contar uma história curta incluindo o elemento secreto.', secretFact: { type: 'word', value: 'MENSAGEM CODIFICADA', hint: 'Comunicação cifrada' }, duration: 120 },
-  { id: 144, title: 'História Inventada', description: 'Agentes devem contar uma história curta incluindo o elemento secreto.', secretFact: { type: 'word', value: 'MAPA DO TESOURO', hint: 'Guia para riquezas' }, duration: 120 },
-  { id: 145, title: 'História Inventada', description: 'Agentes devem contar uma história curta incluindo o elemento secreto.', secretFact: { type: 'word', value: 'POÇÃO MÁGICA', hint: 'Bebida com poderes' }, duration: 120 },
-  { id: 146, title: 'História Inventada', description: 'Agentes devem contar uma história curta incluindo o elemento secreto.', secretFact: { type: 'word', value: 'ESPIÃO DISFARÇADO', hint: 'Agente infiltrado' }, duration: 120 },
-  { id: 147, title: 'História Inventada', description: 'Agentes devem contar uma história curta incluindo o elemento secreto.', secretFact: { type: 'word', value: 'MÁQUINA DO TEMPO', hint: 'Viaja pela história' }, duration: 120 },
-  { id: 148, title: 'História Inventada', description: 'Agentes devem contar uma história curta incluindo o elemento secreto.', secretFact: { type: 'word', value: 'SUPER PODER', hint: 'Habilidade extraordinária' }, duration: 120 },
-  { id: 149, title: 'História Inventada', description: 'Agentes devem contar uma história curta incluindo o elemento secreto.', secretFact: { type: 'word', value: 'ALIEN AMIGÁVEL', hint: 'Visitante do espaço' }, duration: 120 },
-  { id: 150, title: 'História Inventada', description: 'Agentes devem contar uma história curta incluindo o elemento secreto.', secretFact: { type: 'word', value: 'VIAGEM AO PASSADO', hint: 'Retorno no tempo' }, duration: 120 },
-  { id: 151, title: 'História Inventada', description: 'Agentes devem contar uma história curta incluindo o elemento secreto.', secretFact: { type: 'word', value: 'ILHA DESERTA', hint: 'Lugar isolado no mar' }, duration: 120 },
-  { id: 152, title: 'História Inventada', description: 'Agentes devem contar uma história curta incluindo o elemento secreto.', secretFact: { type: 'word', value: 'HERÓI MASCARADO', hint: 'Justiceiro secreto' }, duration: 120 },
-  { id: 153, title: 'História Inventada', description: 'Agentes devem contar uma história curta incluindo o elemento secreto.', secretFact: { type: 'word', value: 'EXPERIMENTO CIENTÍFICO', hint: 'Teste de laboratório' }, duration: 120 },
-  { id: 154, title: 'História Inventada', description: 'Agentes devem contar uma história curta incluindo o elemento secreto.', secretFact: { type: 'word', value: 'GÊMEO SECRETO', hint: 'Irmão desconhecido' }, duration: 120 },
-  { id: 155, title: 'História Inventada', description: 'Agentes devem contar uma história curta incluindo o elemento secreto.', secretFact: { type: 'word', value: 'ARTEFATO ANTIGO', hint: 'Objeto histórico poderoso' }, duration: 120 },
-
-  // OBJETO MISTERIOSO - NOVA CATEGORIA (15 missões)
-  { id: 156, title: 'Objeto Misterioso', description: 'Agentes devem descrever o objeto sem dizer seu nome.', secretFact: { type: 'word', value: 'BÚSSOLA', hint: 'Aponta direções' }, duration: 90 },
-  { id: 157, title: 'Objeto Misterioso', description: 'Agentes devem descrever o objeto sem dizer seu nome.', secretFact: { type: 'word', value: 'BINÓCULO', hint: 'Ver de longe' }, duration: 90 },
-  { id: 158, title: 'Objeto Misterioso', description: 'Agentes devem descrever o objeto sem dizer seu nome.', secretFact: { type: 'word', value: 'LANTERNA', hint: 'Luz portátil' }, duration: 90 },
-  { id: 159, title: 'Objeto Misterioso', description: 'Agentes devem descrever o objeto sem dizer seu nome.', secretFact: { type: 'word', value: 'MICROFONE', hint: 'Amplifica a voz' }, duration: 90 },
-  { id: 160, title: 'Objeto Misterioso', description: 'Agentes devem descrever o objeto sem dizer seu nome.', secretFact: { type: 'word', value: 'ALGEMA', hint: 'Prende pulsos' }, duration: 90 },
-  { id: 161, title: 'Objeto Misterioso', description: 'Agentes devem descrever o objeto sem dizer seu nome.', secretFact: { type: 'word', value: 'CORDA', hint: 'Amarra coisas' }, duration: 90 },
-  { id: 162, title: 'Objeto Misterioso', description: 'Agentes devem descrever o objeto sem dizer seu nome.', secretFact: { type: 'word', value: 'ESPADA', hint: 'Arma de lâmina' }, duration: 90 },
-  { id: 163, title: 'Objeto Misterioso', description: 'Agentes devem descrever o objeto sem dizer seu nome.', secretFact: { type: 'word', value: 'ESCUDO', hint: 'Proteção contra ataques' }, duration: 90 },
-  { id: 164, title: 'Objeto Misterioso', description: 'Agentes devem descrever o objeto sem dizer seu nome.', secretFact: { type: 'word', value: 'MÁSCARA', hint: 'Esconde o rosto' }, duration: 90 },
-  { id: 165, title: 'Objeto Misterioso', description: 'Agentes devem descrever o objeto sem dizer seu nome.', secretFact: { type: 'word', value: 'CANIVETE', hint: 'Ferramenta multiuso' }, duration: 90 },
-  { id: 166, title: 'Objeto Misterioso', description: 'Agentes devem descrever o objeto sem dizer seu nome.', secretFact: { type: 'word', value: 'GRAVADOR', hint: 'Captura sons' }, duration: 90 },
-  { id: 167, title: 'Objeto Misterioso', description: 'Agentes devem descrever o objeto sem dizer seu nome.', secretFact: { type: 'word', value: 'PERUCA', hint: 'Cabelo falso' }, duration: 90 },
-  { id: 168, title: 'Objeto Misterioso', description: 'Agentes devem descrever o objeto sem dizer seu nome.', secretFact: { type: 'word', value: 'PARAFUSO', hint: 'Prende peças girando' }, duration: 90 },
-  { id: 169, title: 'Objeto Misterioso', description: 'Agentes devem descrever o objeto sem dizer seu nome.', secretFact: { type: 'word', value: 'ÍMÃ', hint: 'Atrai metais' }, duration: 90 },
-  { id: 170, title: 'Objeto Misterioso', description: 'Agentes devem descrever o objeto sem dizer seu nome.', secretFact: { type: 'word', value: 'VENENO', hint: 'Substância perigosa' }, duration: 90 },
-
-  // PERSONAGEM FAMOSO - NOVA CATEGORIA (15 missões)
-  { id: 171, title: 'Personagem Famoso', description: 'Agentes devem fazer referências ao personagem sem dizer o nome.', secretFact: { type: 'word', value: 'SHERLOCK HOLMES', hint: 'Detetive de Londres' }, duration: 90 },
-  { id: 172, title: 'Personagem Famoso', description: 'Agentes devem fazer referências ao personagem sem dizer o nome.', secretFact: { type: 'word', value: 'JAMES BOND', hint: 'Agente 007' }, duration: 90 },
-  { id: 173, title: 'Personagem Famoso', description: 'Agentes devem fazer referências ao personagem sem dizer o nome.', secretFact: { type: 'word', value: 'BATMAN', hint: 'Herói morcego' }, duration: 90 },
-  { id: 174, title: 'Personagem Famoso', description: 'Agentes devem fazer referências ao personagem sem dizer o nome.', secretFact: { type: 'word', value: 'DARTH VADER', hint: 'Vilão de máscara preta' }, duration: 90 },
-  { id: 175, title: 'Personagem Famoso', description: 'Agentes devem fazer referências ao personagem sem dizer o nome.', secretFact: { type: 'word', value: 'HARRY POTTER', hint: 'Bruxo com cicatriz' }, duration: 90 },
-  { id: 176, title: 'Personagem Famoso', description: 'Agentes devem fazer referências ao personagem sem dizer o nome.', secretFact: { type: 'word', value: 'INDIANA JONES', hint: 'Arqueólogo aventureiro' }, duration: 90 },
-  { id: 177, title: 'Personagem Famoso', description: 'Agentes devem fazer referências ao personagem sem dizer o nome.', secretFact: { type: 'word', value: 'JOKER', hint: 'Vilão palhaço' }, duration: 90 },
-  { id: 178, title: 'Personagem Famoso', description: 'Agentes devem fazer referências ao personagem sem dizer o nome.', secretFact: { type: 'word', value: 'MARIO', hint: 'Encanador italiano' }, duration: 90 },
-  { id: 179, title: 'Personagem Famoso', description: 'Agentes devem fazer referências ao personagem sem dizer o nome.', secretFact: { type: 'word', value: 'PIKACHU', hint: 'Rato elétrico amarelo' }, duration: 90 },
-  { id: 180, title: 'Personagem Famoso', description: 'Agentes devem fazer referências ao personagem sem dizer o nome.', secretFact: { type: 'word', value: 'HOMEM-ARANHA', hint: 'Herói que escala paredes' }, duration: 90 },
-  { id: 181, title: 'Personagem Famoso', description: 'Agentes devem fazer referências ao personagem sem dizer o nome.', secretFact: { type: 'word', value: 'WOLVERINE', hint: 'Mutante com garras' }, duration: 90 },
-  { id: 182, title: 'Personagem Famoso', description: 'Agentes devem fazer referências ao personagem sem dizer o nome.', secretFact: { type: 'word', value: 'YODA', hint: 'Mestre Jedi verde' }, duration: 90 },
-  { id: 183, title: 'Personagem Famoso', description: 'Agentes devem fazer referências ao personagem sem dizer o nome.', secretFact: { type: 'word', value: 'GANDALF', hint: 'Mago de barba longa' }, duration: 90 },
-  { id: 184, title: 'Personagem Famoso', description: 'Agentes devem fazer referências ao personagem sem dizer o nome.', secretFact: { type: 'word', value: 'THANOS', hint: 'Titã das pedras' }, duration: 90 },
-  { id: 185, title: 'Personagem Famoso', description: 'Agentes devem fazer referências ao personagem sem dizer o nome.', secretFact: { type: 'word', value: 'SHREK', hint: 'Ogro verde' }, duration: 90 },
-
-  // AÇÃO SECRETA - NOVA CATEGORIA (15 missões)
-  { id: 186, title: 'Ação Secreta', description: 'Agentes devem mencionar esta ação de forma natural na conversa.', secretFact: { type: 'word', value: 'COZINHAR', hint: 'Preparar comida' }, duration: 90 },
-  { id: 187, title: 'Ação Secreta', description: 'Agentes devem mencionar esta ação de forma natural na conversa.', secretFact: { type: 'word', value: 'NADAR', hint: 'Mover na água' }, duration: 90 },
-  { id: 188, title: 'Ação Secreta', description: 'Agentes devem mencionar esta ação de forma natural na conversa.', secretFact: { type: 'word', value: 'DANÇAR', hint: 'Mover com ritmo' }, duration: 90 },
-  { id: 189, title: 'Ação Secreta', description: 'Agentes devem mencionar esta ação de forma natural na conversa.', secretFact: { type: 'word', value: 'ESCALAR', hint: 'Subir alturas' }, duration: 90 },
-  { id: 190, title: 'Ação Secreta', description: 'Agentes devem mencionar esta ação de forma natural na conversa.', secretFact: { type: 'word', value: 'FOTOGRAFAR', hint: 'Capturar imagens' }, duration: 90 },
-  { id: 191, title: 'Ação Secreta', description: 'Agentes devem mencionar esta ação de forma natural na conversa.', secretFact: { type: 'word', value: 'MEDITAR', hint: 'Mente calma' }, duration: 90 },
-  { id: 192, title: 'Ação Secreta', description: 'Agentes devem mencionar esta ação de forma natural na conversa.', secretFact: { type: 'word', value: 'PESCAR', hint: 'Pegar peixes' }, duration: 90 },
-  { id: 193, title: 'Ação Secreta', description: 'Agentes devem mencionar esta ação de forma natural na conversa.', secretFact: { type: 'word', value: 'VOAR', hint: 'Ir pelo ar' }, duration: 90 },
-  { id: 194, title: 'Ação Secreta', description: 'Agentes devem mencionar esta ação de forma natural na conversa.', secretFact: { type: 'word', value: 'MERGULHAR', hint: 'Descer na água' }, duration: 90 },
-  { id: 195, title: 'Ação Secreta', description: 'Agentes devem mencionar esta ação de forma natural na conversa.', secretFact: { type: 'word', value: 'ESPIONAR', hint: 'Observar secretamente' }, duration: 90 },
-  { id: 196, title: 'Ação Secreta', description: 'Agentes devem mencionar esta ação de forma natural na conversa.', secretFact: { type: 'word', value: 'ROUBAR', hint: 'Pegar sem permissão' }, duration: 90 },
-  { id: 197, title: 'Ação Secreta', description: 'Agentes devem mencionar esta ação de forma natural na conversa.', secretFact: { type: 'word', value: 'FUGIR', hint: 'Escapar rápido' }, duration: 90 },
-  { id: 198, title: 'Ação Secreta', description: 'Agentes devem mencionar esta ação de forma natural na conversa.', secretFact: { type: 'word', value: 'SALTAR', hint: 'Pular de altura' }, duration: 90 },
-  { id: 199, title: 'Ação Secreta', description: 'Agentes devem mencionar esta ação de forma natural na conversa.', secretFact: { type: 'word', value: 'DISFARÇAR', hint: 'Mudar aparência' }, duration: 90 },
-  { id: 200, title: 'Ação Secreta', description: 'Agentes devem mencionar esta ação de forma natural na conversa.', secretFact: { type: 'word', value: 'HACKEAR', hint: 'Invadir sistemas' }, duration: 90 },
+  // ... (continua com todas as outras missões de Palavra Chave, Desenho Secreto, Gesto Secreto, Código Numérico, Local Secreto, Personagem Famoso)
+  
+  // Adiciona missões de Explicação e Ranking ao final
+  ...EXPLANATION_MISSIONS,
+  ...RANKING_MISSIONS,
 ];
 
-export const ROLE_INFO: Record<PlayerRole, { name: string; description: string; color: string }> = {
-  agent: {
-    name: 'Agente',
-    description: 'Elimine todos os Espiões para vencer. Você recebe os Fatos Secretos.',
-    color: 'text-cyan-400',
-  },
-  spy: {
-    name: 'Espião',
-    description: 'Sobreviva até o final com maioria. Você NÃO recebe os Fatos Secretos.',
-    color: 'text-red-500',
-  },
-  triple: {
-    name: 'Agente Triplo',
-    description: 'Você é um Agente, mas aparece na lista dos Espiões. Não sabe a identidade de ninguém.',
-    color: 'text-purple-500',
-  },
-  jester: {
-    name: 'O Tolo',
-    description: 'Seja eliminado para vencer sozinho! Você NÃO recebe os Fatos Secretos.',
-    color: 'text-yellow-500',
-  },
-};
-
-export function getMissionCounts(): Record<string, number> {
-  const counts: Record<string, number> = {};
-  for (const mission of MISSIONS) {
-    counts[mission.title] = (counts[mission.title] || 0) + 1;
-  }
-  return counts;
+// Funções auxiliares para missões por modo
+export function getMissionsForMode(mode: GameMode): Mission[] {
+  return MISSIONS.filter(m => {
+    if (mode === 'local' && m.onlineOnly) return false;
+    if (mode === 'online' && m.localOnly) return false;
+    return true;
+  });
 }
 
-export const MISSION_COUNTS = getMissionCounts();
+export function getRandomMissionForMode(mode: GameMode): Mission {
+  const availableMissions = getMissionsForMode(mode);
+  return availableMissions[Math.floor(Math.random() * availableMissions.length)];
+}
 
-export function getMissionAlternatives(currentMission: Mission, count: number = 3): SecretFact[] {
-  const sameTitleMissions = MISSIONS.filter(
-    m => m.title === currentMission.title && m.id !== currentMission.id
-  );
-  
-  const shuffled = [...sameTitleMissions].sort(() => Math.random() - 0.5);
+// Conta missões por tipo
+export const MISSION_COUNTS: Record<string, number> = {
+  'Palavra Chave': 30,
+  'Desenho Secreto': 20,
+  'Gesto Secreto': 15,
+  'Código Numérico': 10,
+  'Local Secreto': 15,
+  'Personagem Famoso': 10,
+  'Explicação': EXPLANATION_MISSIONS.length,
+  'Ranking Secreto': RANKING_MISSIONS.length,
+};
+
+// Função para pegar alternativas de missão (para 3 pistas)
+export function getMissionAlternatives(mission: Mission, count: number = 3): SecretFact[] {
+  const sameTitleMissions = MISSIONS.filter(m => m.title === mission.title && m.id !== mission.id);
+  const shuffled = sameTitleMissions.sort(() => Math.random() - 0.5);
   const alternatives = shuffled.slice(0, count - 1).map(m => m.secretFact);
   
-  const allOptions = [currentMission.secretFact, ...alternatives];
+  // Inclui a missão correta e embaralha todas
+  const allOptions = [mission.secretFact, ...alternatives];
   return allOptions.sort(() => Math.random() - 0.5);
 }
