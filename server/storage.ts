@@ -74,7 +74,7 @@ export class MemStorage implements IStorage {
       hostId: playerId,
       players: [host],
       status: 'waiting',
-      maxPlayers: 10,
+      maxPlayers: 12,
       currentRound: 1,
       maxRounds: 3,
       mission: null,
@@ -162,29 +162,29 @@ export class MemStorage implements IStorage {
   async startGame(roomId: string): Promise<Room | null> {
     const room = this.rooms.get(roomId);
     if (!room) return null;
-    if (room.players.length < 3) return null;
+    if (room.players.length < 5) return null;
 
     // 1. Embaralha a lista inicial de jogadores para decidir quem pega qual papel
     const shuffled = shuffleArray([...room.players]);
     
-    const numSpies = Math.max(1, Math.floor(room.players.length / 3));
+    const numSpies = Math.max(2, Math.floor(room.players.length / 3));
     
     // Até 7 jogadores: Tolo OU Triplo (aleatório)
     // 7+ jogadores: Tolo E Triplo
     let hasTriple = false;
     let hasJester = false;
     
-    if (room.players.length >= 5 && room.players.length < 7) {
-      // Escolhe aleatoriamente entre Tolo ou Triplo
+    if (room.players.length >= 7) {
+      // Ambos Tolo e Agente Triplo a partir de 7 jogadores
+      hasTriple = true;
+      hasJester = true;
+    } else if (room.players.length >= 5) {
+      // Para 5 ou 6 jogadores, escolhe aleatoriamente entre Tolo ou Triplo
       if (Math.random() < 0.5) {
         hasTriple = true;
       } else {
         hasJester = true;
       }
-    } else if (room.players.length >= 7) {
-      // Ambos
-      hasTriple = true;
-      hasJester = true;
     }
 
     // 2. Atribui os papéis (Isso cria uma lista ordenada: Espiões primeiro, etc)
@@ -208,7 +208,8 @@ export class MemStorage implements IStorage {
     
     room.status = 'role_reveal';
     room.mission = getRandomMission();
-    room.missionAlternatives = getMissionAlternatives(room.mission, 5);
+    // Agentes recebem 3 alternativas, Espiões não recebem dica pública (já removida do schema)
+    room.missionAlternatives = getMissionAlternatives(room.mission, 3);
     room.currentPlayerIndex = 0;
     room.currentRound = 1;
 

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export type GameMode = 'local' | 'online';
+export type GameMode = 'online';
 export type PlayerRole = 'agent' | 'spy' | 'triple' | 'jester';
 export type AbilityType = 'spy_vote' | 'swap_vote' | 'extra_time' | 'force_revote' | 'peek_role' | 'shield' | 'negative_vote' | 'forensic_investigation';
 
@@ -38,7 +38,7 @@ export interface Player {
 export interface SecretFact {
   type: 'emoji' | 'code' | 'gesture' | 'word' | 'ranking' | 'explanation';
   value: string;
-  hint: string;
+
   spyValue?: string; // Para missões de Explicação - valor diferente para espiões
   rankingItems?: string[]; // Para missões de Ranking
   rankingCriteria?: string; // Critério de ordenação
@@ -50,7 +50,7 @@ export interface Mission {
   description: string;
   secretFact: SecretFact;
   duration: number;
-  localOnly?: boolean; // Se true, só aparece no modo local
+
   onlineOnly?: boolean; // Se true, só aparece no modo online
 }
 
@@ -223,21 +223,21 @@ export const EXPLANATION_MISSIONS: Mission[] = [
 
 // Missões de Ranking Secreto - Ordenar itens por critério secreto
 export const RANKING_MISSIONS: Mission[] = [
-  { id: 2001, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do menor ao maior', hint: 'Critério de tamanho', rankingItems: ['Formiga', 'Gato', 'Elefante', 'Baleia'], rankingCriteria: 'tamanho' }, duration: 90 },
-  { id: 2002, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais frio ao mais quente', hint: 'Critério de temperatura', rankingItems: ['Antártida', 'Brasil', 'Egito', 'Vulcão'], rankingCriteria: 'temperatura' }, duration: 90 },
-  { id: 2003, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais antigo ao mais novo', hint: 'Critério de idade', rankingItems: ['Pirâmides', 'Coliseu', 'Torre Eiffel', 'Burj Khalifa'], rankingCriteria: 'idade' }, duration: 90 },
-  { id: 2004, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais lento ao mais rápido', hint: 'Critério de velocidade', rankingItems: ['Tartaruga', 'Humano', 'Cavalo', 'Guepardo'], rankingCriteria: 'velocidade' }, duration: 90 },
-  { id: 2005, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais barato ao mais caro', hint: 'Critério de preço', rankingItems: ['Chiclete', 'Pizza', 'Smartphone', 'Carro'], rankingCriteria: 'preço' }, duration: 90 },
-  { id: 2006, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais leve ao mais pesado', hint: 'Critério de peso', rankingItems: ['Pena', 'Maçã', 'Tijolo', 'Carro'], rankingCriteria: 'peso' }, duration: 90 },
-  { id: 2007, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do menor ao maior população', hint: 'Critério de população', rankingItems: ['Vaticano', 'Portugal', 'Brasil', 'China'], rankingCriteria: 'população' }, duration: 90 },
-  { id: 2008, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais curto ao mais longo', hint: 'Critério de duração', rankingItems: ['Segundo', 'Minuto', 'Hora', 'Dia'], rankingCriteria: 'duração' }, duration: 90 },
-  { id: 2009, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do menos doce ao mais doce', hint: 'Critério de doçura', rankingItems: ['Limão', 'Maçã', 'Banana', 'Mel'], rankingCriteria: 'doçura' }, duration: 90 },
-  { id: 2010, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais baixo ao mais alto', hint: 'Critério de altura', rankingItems: ['Grama', 'Casa', 'Prédio', 'Montanha'], rankingCriteria: 'altura' }, duration: 90 },
-  { id: 2011, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais silencioso ao mais barulhento', hint: 'Critério de volume', rankingItems: ['Sussurro', 'Conversa', 'Grito', 'Trovão'], rankingCriteria: 'volume' }, duration: 90 },
-  { id: 2012, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do menos perigoso ao mais perigoso', hint: 'Critério de perigo', rankingItems: ['Coelho', 'Cachorro', 'Lobo', 'Leão'], rankingCriteria: 'perigo' }, duration: 90 },
-  { id: 2013, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais simples ao mais complexo', hint: 'Critério de complexidade', rankingItems: ['Pedra', 'Planta', 'Animal', 'Humano'], rankingCriteria: 'complexidade' }, duration: 90 },
-  { id: 2014, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais próximo ao mais distante do Sol', hint: 'Critério de distância', rankingItems: ['Mercúrio', 'Terra', 'Júpiter', 'Netuno'], rankingCriteria: 'distância do sol' }, duration: 90 },
-  { id: 2015, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do menos calórico ao mais calórico', hint: 'Critério de calorias', rankingItems: ['Pepino', 'Arroz', 'Chocolate', 'Bacon'], rankingCriteria: 'calorias' }, duration: 90 },
+  { id: 2001, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do menor ao maior', rankingItems: ['🐜', '🐈', '🐘', '🐳'], rankingCriteria: 'tamanho' }, duration: 90 },
+  { id: 2002, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais frio ao mais quente', rankingItems: ['🥶', '🇧🇷', '🇪🇬', '🌋'], rankingCriteria: 'temperatura' }, duration: 90 },
+  { id: 2003, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais antigo ao mais novo', rankingItems: ['🗿', '🏟️', '🗼', '🏙️'], rankingCriteria: 'idade' }, duration: 90 },
+  { id: 2004, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais lento ao mais rápido', rankingItems: ['🐢', '🚶', '🐎', '🐆'], rankingCriteria: 'velocidade' }, duration: 90 },
+  { id: 2005, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais barato ao mais caro', rankingItems: ['🍬', '🍕', '📱', '🚗'], rankingCriteria: 'preço' }, duration: 90 },
+  { id: 2006, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais leve ao mais pesado', rankingItems: ['🪶', '🍎', '🧱', '🚗'], rankingCriteria: 'peso' }, duration: 90 },
+  { id: 2007, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do menor ao maior população', rankingItems: ['🇻🇦', '🇵🇹', '🇧🇷', '🇨🇳'], rankingCriteria: 'população' }, duration: 90 },
+  { id: 2008, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais curto ao mais longo', rankingItems: ['⏱️', '⏳', '🕰️', '🗓️'], rankingCriteria: 'duração' }, duration: 90 },
+  { id: 2009, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do menos doce ao mais doce', rankingItems: ['🍋', '🍎', '🍌', '🍯'], rankingCriteria: 'doçura' }, duration: 90 },
+  { id: 2010, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais baixo ao mais alto', rankingItems: ['🌱', '🏠', '🏢', '⛰️'], rankingCriteria: 'altura' }, duration: 90 },
+  { id: 2011, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais silencioso ao mais barulhento', rankingItems: ['🤫', '🗣️', '📢', '🌩️'], rankingCriteria: 'volume' }, duration: 90 },
+  { id: 2012, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do menos perigoso ao mais perigoso', rankingItems: ['🐇', '🐕', '🐺', '🦁'], rankingCriteria: 'perigo' }, duration: 90 },
+  { id: 2013, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais simples ao mais complexo', rankingItems: ['🪨', '🌿', '🐒', '🧠'], rankingCriteria: 'complexidade' }, duration: 90 },
+  { id: 2014, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais próximo ao mais distante do Sol', rankingItems: ['🪐', '🌍', '☄️', '🌌'], rankingCriteria: 'distância do sol' }, duration: 90 },
+  { id: 2015, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do menos calórico ao mais calórico', rankingItems: ['🥒', '🍚', '🍫', '🥓'], rankingCriteria: 'calorias' }, duration: 90 },
 ];
 
 export const MISSIONS: Mission[] = [

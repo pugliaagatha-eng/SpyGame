@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 
 interface SplashScreenProps {
-  onSelectMode: (mode: 'local' | 'online') => void;
+  onSelectMode: (mode: 'online') => void;
 }
 
 export default function SplashScreen({ onSelectMode }: SplashScreenProps) {
@@ -30,7 +30,7 @@ export default function SplashScreen({ onSelectMode }: SplashScreenProps) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full max-w-2xl mb-8">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 w-full max-w-sm mb-8">
         <Card 
           className="neon-border cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg group"
           onClick={() => onSelectMode('online')}
@@ -40,25 +40,9 @@ export default function SplashScreen({ onSelectMode }: SplashScreenProps) {
             <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
               <Wifi className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
             </div>
-            <h2 className="font-serif text-xl sm:text-2xl font-bold text-primary mb-2">ONLINE</h2>
+            <h2 className="font-serif text-xl sm:text-2xl font-bold text-primary mb-2">JOGAR ONLINE</h2>
             <p className="text-muted-foreground text-sm">
               Crie ou entre em uma sala virtual com jogadores remotos
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className="neon-border cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg group"
-          onClick={() => onSelectMode('local')}
-          data-testid="button-mode-local"
-        >
-          <CardContent className="p-6 sm:p-8 text-center">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-full bg-secondary/20 flex items-center justify-center group-hover:bg-secondary/30 transition-colors">
-              <Users className="w-8 h-8 sm:w-10 sm:h-10 text-secondary" />
-            </div>
-            <h2 className="font-serif text-xl sm:text-2xl font-bold text-secondary mb-2">LOCAL</h2>
-            <p className="text-muted-foreground text-sm">
-              Jogue no mesmo dispositivo passando para cada jogador
             </p>
           </CardContent>
         </Card>
@@ -87,10 +71,10 @@ export default function SplashScreen({ onSelectMode }: SplashScreenProps) {
                 Os Papéis
               </h3>
               <ul className="space-y-2 text-muted-foreground">
-                <li><span className="text-cyan-400 font-semibold">Agente:</span> Elimine os Espiões. Recebe os Fatos Secretos (Palavra, Local, etc.).</li>
-                <li><span className="text-red-500 font-semibold">Espião:</span> Sobreviva até a maioria. Não recebe os Fatos. Tente descobrir o segredo e se misturar.</li>
-                <li><span className="text-purple-500 font-semibold">Agente Triplo:</span> Agente que aparece como Espião. Conhece o segredo, mas vence com os Espiões.</li>
-                <li><span className="text-yellow-500 font-semibold">O Tolo:</span> Vence se for eliminado! Seu objetivo é agir de forma suspeita e atrair votos.</li>
+                <li><span className="text-cyan-400 font-semibold">Agente:</span> Elimine os Espiões. Recebe **3 Fatos Secretos** e deve deduzir qual é o correto.</li>
+                <li><span className="text-red-500 font-semibold">Espião:</span> Sobreviva até a maioria. Não recebe os Fatos. Tente descobrir o segredo e se misturar. **Sempre há pelo menos 2 Espiões.**</li>
+                <li><span className="text-purple-500 font-semibold">Agente Triplo:</span> Agente que aparece como Espião. Conhece o segredo, mas vence com os Espiões. **Aparece a partir de 7 jogadores.**</li>
+                <li><span className="text-yellow-500 font-semibold">O Tolo:</span> Vence se for eliminado! Seu objetivo é agir de forma suspeita e atraia votos. **Aparece a partir de 7 jogadores.**</li>},{find:
               </ul>
             </section>
 
@@ -120,11 +104,11 @@ Cada jogador recebe uma habilidade única que pode usar uma vez por partida (ex:
                 Fluxo do Jogo
               </h3>
               <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-<li>**Início:** Cada jogador recebe seu papel e o Fato Secreto (se for Agente).</li>
-	                <li>**Missão:** A missão da rodada é revelada.</li>
-	                <li>**Discussão:** Os jogadores discutem sobre a missão, tentando obter informações sem revelar o segredo.</li>
-	                <li>**Votação:** Todos votam secretamente em quem acham que é o Espião.</li>
-	                <li>**Eliminação:** O jogador mais votado é eliminado.</li>
+<li>**Início:** Cada jogador recebe seu papel. Agentes recebem **3 Fatos Secretos** (Palavra, Local, etc.) e devem deduzir qual é o correto. Espiões não recebem nenhum Fato.</li>
+	                <li>**Missão:** A missão da rodada é revelada. Pode ser uma Palavra Chave, um Desenho Secreto, um Ranking Secreto (com emojis) ou uma Explicação.</li>
+	                <li>**Discussão/Interação:** Os jogadores interagem de acordo com a missão (ex: desenhando, discutindo, ordenando). Agentes tentam confirmar o Fato Secreto, Espiões tentam blefar.</li>
+	                <li>**Votação:** Todos votam secretamente em quem acham que é o Espião. O Tolo tem um voto negativo que pode salvar alguém.</li>
+	                <li>**Eliminação:** O jogador mais votado é eliminado. Se for o Tolo, ele vence. Se for um Espião, os Agentes se aproximam da vitória.</li>
 	                <li>**Fim:** O jogo termina se todos os Espiões forem eliminados (vitória dos Agentes) ou se o número de Espiões for igual ou maior que o de Agentes (vitória dos Espiões). O Tolo vence se for eliminado.</li>
               </ol>
             </section>
