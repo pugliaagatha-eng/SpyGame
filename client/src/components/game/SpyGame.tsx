@@ -366,27 +366,7 @@ export default function SpyGame() {
     }
   }, [toast, wsJoinRoom, saveSession]);
 
-  const handleKickPlayer = useCallback(async (playerIdToKick: string) => {
-    if (room && myPlayer?.isHost) {
-      try {
-        const response = await fetch(`/api/rooms/${room.id}/kick`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ hostId: myPlayer.id, playerIdToKick }),
-        });
 
-        const result = await response.json();
-
-        if (response.ok) {
-          toast({ title: 'Jogador Expulso', description: `${players.find(p => p.id === playerIdToKick)?.name} foi expulso da sala.` });
-        } else {
-          toast({ title: 'Erro ao Expulsar', description: result.error || 'Não foi possível expulsar o jogador.', variant: 'destructive' });
-        }
-      } catch (error) {
-        toast({ title: 'Erro de Conexão', description: 'Não foi possível conectar ao servidor.', variant: 'destructive' });
-      }
-    }
-  }, [room, myPlayer, players, toast]);
 
   const handleJoinRoom = useCallback(async (code: string, playerName: string) => {
     const result = await apiJoinRoom(code, playerName);
@@ -403,27 +383,7 @@ export default function SpyGame() {
     }
   }, [toast, wsJoinRoom, saveSession]);
 
-  const handleKickPlayer = useCallback(async (playerIdToKick: string) => {
-    if (room && myPlayer?.isHost) {
-      try {
-        const response = await fetch(`/api/rooms/${room.id}/kick`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ hostId: myPlayer.id, playerIdToKick }),
-        });
 
-        const result = await response.json();
-
-        if (response.ok) {
-          toast({ title: 'Jogador Expulso', description: `${players.find(p => p.id === playerIdToKick)?.name} foi expulso da sala.` });
-        } else {
-          toast({ title: 'Erro ao Expulsar', description: result.error || 'Não foi possível expulsar o jogador.', variant: 'destructive' });
-        }
-      } catch (error) {
-        toast({ title: 'Erro de Conexão', description: 'Não foi possível conectar ao servidor.', variant: 'destructive' });
-      }
-    }
-  }, [room, myPlayer, players, toast]);
 
   const handleAddPlayer = useCallback((name: string) => {
     const ability = ABILITIES[Math.floor(Math.random() * ABILITIES.length)];
@@ -791,7 +751,7 @@ export default function SpyGame() {
   const currentDrawingPlayer = activePlayers[currentDrawingPlayerIndex];
   const eliminatedPlayer = players.find(p => p.isEliminated && Object.values(votes).includes(p.id));
     const isHost = room ? room.hostId === myPlayerId : true;
-    const myPlayerInfo = myPlayerId ? players.find(p => p.id === myPlayerId) : null;urrentPlayer;
+    const myPlayerInfo = myPlayerId ? players.find(p => p.id === myPlayerId) : currentPlayer;
 
   const isDrawingMission = mission?.title === 'Desenho Secreto';
   // In online mode, show abilities for the player during discussion/voting
