@@ -389,9 +389,11 @@ export default function SpyGame() {
         isConnected: true,
       }));
       const playersWithRoles = assignRoles(newPlayers);
+      // Embaralhar a ordem de exibição dos papéis para não revelar quem é quem
+      const shuffledPlayers = [...playersWithRoles].sort(() => Math.random() - 0.5);
       const selectedMission = MISSIONS[Math.floor(Math.random() * MISSIONS.length)];
       const alternatives = getMissionAlternatives(selectedMission, 3);
-      setPlayers(playersWithRoles);
+      setPlayers(shuffledPlayers);
       setMission(selectedMission);
       setMissionAlternatives(alternatives);
       setPhase('role_reveal');
@@ -598,6 +600,7 @@ export default function SpyGame() {
         setVotes({});
         setDrawings([]);
         setPhase('mission');
+        // NÃO resetar habilidades - elas devem ser usadas apenas uma vez por partida
         setPlayers(prev => prev.map(p => ({ ...p, hasVoted: false, votedFor: undefined })));
       }
     }
@@ -722,6 +725,7 @@ export default function SpyGame() {
           key={`role-reveal-${mode === 'online' ? myPlayerId : currentPlayerIndex}`}
           player={mode === 'online' && myPlayer ? myPlayer : currentPlayer}
           secretFact={mission?.secretFact ?? null}
+          missionAlternatives={missionAlternatives}
           spyList={spyList}
           agentList={agentList}
           onNext={handleNextPlayerReveal}
