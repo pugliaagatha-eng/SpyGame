@@ -56,7 +56,7 @@ export default function SplashScreen({ onSelectMode }: SplashScreenProps) {
             <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-full bg-secondary/20 flex items-center justify-center group-hover:bg-secondary/30 transition-colors">
               <Users className="w-8 h-8 sm:w-10 sm:h-10 text-secondary" />
             </div>
-            <h2 className="font-serif text-xl sm:text-2xl font-bold text-secondary mb-2">LOCAL</h2>}],path:
+            <h2 className="font-serif text-xl sm:text-2xl font-bold text-secondary mb-2">LOCAL</h2>
             <p className="text-muted-foreground text-sm">
               Jogue no mesmo dispositivo passando para cada jogador
             </p>
