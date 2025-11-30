@@ -87,10 +87,10 @@ export default function SplashScreen({ onSelectMode }: SplashScreenProps) {
                 Os Papéis
               </h3>
               <ul className="space-y-2 text-muted-foreground">
-                <li><span className="text-cyan-400 font-semibold">Agente:</span> Elimine os Espiões. Recebe os Fatos Secretos.</li>
-                <li><span className="text-red-500 font-semibold">Espião:</span> Sobreviva até a maioria. Não recebe os Fatos.</li>
-                <li><span className="text-purple-500 font-semibold">Agente Triplo:</span> Agente que aparece como Espião.</li>
-                <li><span className="text-yellow-500 font-semibold">O Tolo:</span> Vence se for eliminado!</li>
+                <li><span className="text-cyan-400 font-semibold">Agente:</span> Elimine os Espiões. Recebe os Fatos Secretos (Palavra, Local, etc.).</li>
+                <li><span className="text-red-500 font-semibold">Espião:</span> Sobreviva até a maioria. Não recebe os Fatos. Tente descobrir o segredo e se misturar.</li>
+                <li><span className="text-purple-500 font-semibold">Agente Triplo:</span> Agente que aparece como Espião. Conhece o segredo, mas vence com os Espiões.</li>
+                <li><span className="text-yellow-500 font-semibold">O Tolo:</span> Vence se for eliminado! Seu objetivo é agir de forma suspeita e atrair votos.</li>
               </ul>
             </section>
 
@@ -100,8 +100,7 @@ export default function SplashScreen({ onSelectMode }: SplashScreenProps) {
                 As Missões
               </h3>
               <p className="text-muted-foreground">
-                Em cada rodada, uma missão é apresentada. Agentes conhecem o segredo,
-                Espiões precisam blefar usando as dicas públicas.
+Em cada rodada, uma missão é apresentada. Agentes conhecem o segredo (Palavra, Local, Código, etc.), enquanto os Espiões precisam blefar usando apenas as dicas públicas e o contexto da discussão. O objetivo dos Agentes é identificar o Espião, e o do Espião é não ser descoberto.
               </p>
             </section>
 
@@ -111,8 +110,7 @@ export default function SplashScreen({ onSelectMode }: SplashScreenProps) {
                 Habilidades Especiais
               </h3>
               <p className="text-muted-foreground">
-                Cada jogador recebe uma habilidade única que pode usar uma vez por partida.
-                Use estrategicamente para descobrir espiões ou se proteger!
+Cada jogador recebe uma habilidade única que pode usar uma vez por partida (ex: Espiar Voto, Trocar Voto, Tempo Extra). Use estrategicamente para descobrir espiões, manipular a votação ou se proteger da eliminação. As habilidades são reveladas apenas ao jogador que as possui.
               </p>
             </section>
 
@@ -122,10 +120,12 @@ export default function SplashScreen({ onSelectMode }: SplashScreenProps) {
                 Fluxo do Jogo
               </h3>
               <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-                <li>Discussão sobre a missão (1:30)</li>
-                <li>Votação secreta</li>
-                <li>Jogador mais votado é eliminado</li>
-                <li>3 rodadas no total</li>
+<li>**Início:** Cada jogador recebe seu papel e o Fato Secreto (se for Agente).</li>
+	                <li>**Missão:** A missão da rodada é revelada.</li>
+	                <li>**Discussão:** Os jogadores discutem sobre a missão, tentando obter informações sem revelar o segredo.</li>
+	                <li>**Votação:** Todos votam secretamente em quem acham que é o Espião.</li>
+	                <li>**Eliminação:** O jogador mais votado é eliminado.</li>
+	                <li>**Fim:** O jogo termina se todos os Espiões forem eliminados (vitória dos Agentes) ou se o número de Espiões for igual ou maior que o de Agentes (vitória dos Espiões). O Tolo vence se for eliminado.</li>
               </ol>
             </section>
           </div>
