@@ -2,6 +2,16 @@ import { randomUUID } from "crypto";
 import type { Room, Player, Mission, DrawingData, PlayerRole, Ability, GamePhase } from "@shared/schema";
 import { MISSIONS, getRandomAbility } from "@shared/schema";
 
+// --- NOVA FUNÇÃO: Algoritmo Fisher-Yates para embaralhamento real ---
+function shuffleArray<T>(array: T[]): T[] {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+}
+
 const generateRoomCode = () => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
@@ -151,11 +161,14 @@ export class MemStorage implements IStorage {
     if (!room) return null;
     if (room.players.length < 3) return null;
 
-    const shuffled = [...room.players].sort(() => Math.random() - 0.5);
+    // 1. Embaralha a lista inicial de jogadores para decidir quem pega qual papel
+    const shuffled = shuffleArray([...room.players]);
+    
     const numSpies = Math.max(1, Math.floor(room.players.length / 3));
     const hasTriple = room.players.length >= 5;
     const hasJester = room.players.length >= 5;
 
+    // 2. Atribui os papéis (Isso cria uma lista ordenada: Espiões primeiro, etc)
     const playersWithRoles = shuffled.map((player, index) => {
       let role: PlayerRole = 'agent';
       if (index < numSpies) {
@@ -165,10 +178,15 @@ export class MemStorage implements IStorage {
       } else if (hasJester && index === numSpies + 1) {
         role = 'jester';
       }
+      // Re-rola a habilidade baseada no papel novo
       return { ...player, role, abilities: [getRandomAbility(role)], isReady: false };
     });
 
-    room.players = playersWithRoles;
+    // 3. --- CORREÇÃO IMPORTANTE ---
+    // Embaralha a lista FINAL para que a ordem no array (e na tela) seja aleatória
+    // e não revele quem é quem (ex: evitando que os primeiros sejam sempre espiões).
+    room.players = shuffleArray(playersWithRoles);
+    
     room.status = 'role_reveal';
     room.mission = getRandomMission();
     room.currentPlayerIndex = 0;
