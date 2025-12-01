@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Vote, Check, User, ChevronRight, EyeOff, HelpCircle, Sparkles, Eye, Repeat, Clock, RotateCcw, Search, Shield, MinusCircle, FileSearch } from 'lucide-react';
+import { Vote, Check, User, ChevronRight, EyeOff, Info, Sparkles, Eye, Repeat, Clock, RotateCcw, Search, Shield, MinusCircle, FileSearch, Shuffle, Timer } from 'lucide-react';
 import type { Player, Ability, AbilityType } from '@shared/schema';
 import { ABILITIES } from '@shared/schema';
 
@@ -22,6 +22,8 @@ const ABILITY_ICONS: Record<AbilityType, typeof Eye> = {
   shield: Shield,
   negative_vote: MinusCircle,
   forensic_investigation: FileSearch,
+  scramble_fact: Shuffle,
+  force_revote_30s: Timer,
 };
 
 interface VotingPhaseProps {
@@ -152,7 +154,7 @@ export default function VotingPhase({
               onClick={() => setShowHelpDialog(true)}
               data-testid="button-ability-help"
             >
-              <HelpCircle className="w-5 h-5 text-secondary" />
+              <Info className="w-5 h-5 text-secondary" />
             </Button>
           </div>
           <CardTitle className="font-serif text-2xl">
@@ -172,7 +174,7 @@ export default function VotingPhase({
                   className="h-6 w-6 ml-auto"
                   onClick={() => setShowHelpDialog(true)}
                 >
-                  <HelpCircle className="w-4 h-4 text-muted-foreground" />
+                  <Info className="w-4 h-4 text-muted-foreground" />
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -238,7 +240,7 @@ export default function VotingPhase({
         <DialogContent className="neon-border max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-serif text-xl flex items-center gap-2">
-              <HelpCircle className="w-5 h-5 text-secondary" />
+              <Info className="w-5 h-5 text-secondary" />
               Guia de Habilidades
             </DialogTitle>
             <DialogDescription>

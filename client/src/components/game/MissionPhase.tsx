@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Target, Clock, ChevronRight, Hash, Pencil, ArrowUpDown, KeyRound, BookOpen, Phone, Eye, Headphones, Check, Send, Skull, Shuffle } from 'lucide-react';
+import { Target, Clock, ChevronRight, Hash, Pencil, ArrowUpDown, KeyRound, BookOpen, Phone, Eye, Headphones, Check, Send, Skull } from 'lucide-react';
 import type { Mission, PlayerRole, CodeSubmission } from '@shared/schema';
 import { MISSION_COUNTS } from '@shared/schema';
 
@@ -19,6 +19,8 @@ interface MissionPhaseProps {
   onSubmitCode?: (code: string) => void;
   codeSubmissions?: CodeSubmission[];
   myPlayerId?: string;
+  onDecryptSecret?: () => void;
+  hasDecrypted?: boolean;
 }
 
 export default function MissionPhase({
@@ -33,6 +35,8 @@ export default function MissionPhase({
   onSubmitCode,
   codeSubmissions = [],
   myPlayerId,
+  onDecryptSecret,
+  hasDecrypted = false,
 }: MissionPhaseProps) {
   const [showPhoneCall, setShowPhoneCall] = useState(false);
   const [codeInput, setCodeInput] = useState(['', '', '', '', '']);
@@ -76,17 +80,6 @@ export default function MissionPhase({
   const isJester = playerRole === 'jester';
   const doesNotKnowSecret = isSpy || isJester;
   const isStoryMission = mission.secretFact.type === 'story';
-  
-  const scrambledSecretFact = useMemo(() => {
-    if (!doesNotKnowSecret) return null;
-    const text = mission.secretFact.value || '';
-    const letters = text.split('');
-    for (let i = letters.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [letters[i], letters[j]] = [letters[j], letters[i]];
-    }
-    return letters.join('');
-  }, [mission.id, mission.secretFact.value, doesNotKnowSecret]);
   
   useEffect(() => {
     if (isAgent && !isStoryMission) {
@@ -183,16 +176,37 @@ export default function MissionPhase({
                   ? 'Você NÃO conhece a história desta missão.' 
                   : 'Você NÃO conhece o fato secreto desta missão.'}
               </p>
-              {!isStoryMission && (
+              {!isStoryMission && onDecryptSecret && (
                 <div className="p-3 rounded bg-red-500/20 border border-red-400/50">
-                  <h4 className="text-xs font-semibold text-red-400 mb-1 flex items-center gap-1">
+                  <h4 className="text-xs font-semibold text-red-400 mb-2 flex items-center gap-1">
                     <Headphones className="w-3 h-3" />
                     Habilidade: "Transcrever Ligação"
                   </h4>
-                  <p className="text-xs text-center text-red-400/70">
-                    Use na fase de discussão para receber o fato secreto embaralhado no chat secreto dos espiões.
+                  {hasDecrypted ? (
+                    <p className="text-xs text-center text-green-400 flex items-center justify-center gap-1">
+                      <Check className="w-3 h-3" />
+                      Transcrição enviada ao chat dos espiões!
+                    </p>
+                  ) : (
+                    <Button
+                      onClick={onDecryptSecret}
+                      variant="outline"
+                      size="sm"
+                      className="w-full bg-red-500/30 border-red-400 text-red-300 hover:bg-red-500/50"
+                    >
+                      <Headphones className="w-4 h-4 mr-2" />
+                      Transcrever Ligação (Embaralhado)
+                    </Button>
+                  )}
+                  <p className="text-xs text-center text-red-400/60 mt-2">
+                    A transcrição aparecerá no chat secreto dos espiões.
                   </p>
                 </div>
+              )}
+              {!isStoryMission && !onDecryptSecret && (
+                <p className="text-xs text-center text-red-400/60">
+                  Use o chat secreto dos espiões para se comunicar!
+                </p>
               )}
             </div>
           )}
@@ -283,27 +297,10 @@ export default function MissionPhase({
                   Você viu o código durante o telefonema. Memorize-o!
                 </p>
               )}
-              {doesNotKnowSecret && scrambledSecretFact && (
-                <div className="my-3">
-                  <div className="p-3 rounded bg-red-500/20 border border-red-400/50">
-                    <h4 className="text-xs font-semibold text-red-400 mb-2 flex items-center justify-center gap-1">
-                      <Shuffle className="w-3 h-3" />
-                      Fato Secreto (Embaralhado)
-                    </h4>
-                    <p className="font-mono text-center text-red-300 font-bold text-lg tracking-wider">
-                      {scrambledSecretFact}
-                    </p>
-                  </div>
-                  <div className="mt-3 p-2 rounded bg-amber-500/10 border border-amber-500/30">
-                    <h4 className="text-xs font-semibold text-amber-400 mb-1 flex items-center gap-1">
-                      <Headphones className="w-3 h-3" />
-                      Habilidade: "Transcrever Ligação"
-                    </h4>
-                    <p className="text-xs text-center text-amber-400/70">
-                      Use na fase de discussão para desembaralhar o fato secreto no chat dos espiões.
-                    </p>
-                  </div>
-                </div>
+              {doesNotKnowSecret && (
+                <p className={`text-sm text-center my-2 ${isJester ? 'text-yellow-300/80' : 'text-red-300/80'}`}>
+                  Você NÃO conhece o código. Use a habilidade acima para transcrever!
+                </p>
               )}
               
               <div className="mt-4 pt-4 border-t border-green-500/30">

@@ -129,15 +129,21 @@ npm start
 Currently using in-memory storage (MemStorage). Rooms are lost when server restarts. For persistence, a database implementation would be needed.
 
 ## Recent Changes
-- December 1, 2024: Critical Bug Fixes and Code Mission Redesign
+- December 1, 2024: Complete Spy Information Redesign
+  - Fixed React error #130 in VotingPhase and OrderPhase by replacing HelpCircle with Info/AlertCircle icons
+  - Removed ALL hints from spy views (MissionPhase, DrawingCanvas, DiscussionPhase)
+  - Agents receive secret fact ONLY via animated phone call overlay (5 seconds)
+  - Spies now have a "Transcrever Ligação" button during mission phase (not discussion)
+  - Decrypt button sends scrambled secret to spy chat for all spies to see
+  - Added decrypt_secret WebSocket handler that broadcasts to all spies
+  - Removed scrambled display from MissionPhase - spies must use decrypt button
+  - DrawingCanvas no longer shows hint to spies - only "Você não sabe o que desenhar"
+  - DiscussionPhase hints only visible to agents (gated by isAgent check)
+
+- December 1, 2024: Previous Bug Fixes
   - Fixed React error #130 causing black screen for spies in discussion phase
   - Removed problematic HelpCircle lucide-react import that was tree-shaken in production
   - Removed duplicate code display: agents now ONLY see secret during phone call overlay
-  - Removed static "Fato Secreto (Telefonema)" box from MissionPhase
-  - Removed secret fact section from RoleReveal component
-  - Spies now see scrambled secret fact letters instead of partial code digits
-  - Added "Transcrever Ligação" ability hint for spies to unscramble
-  - Removed hint display for spies - they only see scrambled letters
 
 - December 1, 2024: Auto-Disconnect and Draw Condition
   - Added auto-disconnect feature: players who don't reconnect within 45 seconds are removed

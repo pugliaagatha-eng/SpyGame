@@ -80,6 +80,7 @@ export default function SpyGame() {
   const [currentStoryPlayerIndex, setCurrentStoryPlayerIndex] = useState(0);
   const [codeSubmissions, setCodeSubmissions] = useState<CodeSubmission[]>([]);
   const [orderSubmissions, setOrderSubmissions] = useState<OrderSubmission[]>([]);
+  const [hasDecrypted, setHasDecrypted] = useState(false);
   
   const isChatMinimizedRef = useRef(isChatMinimized);
   const isSpyChatMinimizedRef = useRef(isSpyChatMinimized);
@@ -284,7 +285,10 @@ export default function SpyGame() {
           const serverPhase = payload.status;
           if (serverPhase === 'waiting') setPhase('room_lobby');
           else if (serverPhase === 'role_reveal') setPhase('role_reveal');
-          else if (serverPhase === 'mission') setPhase('mission');
+          else if (serverPhase === 'mission') {
+            setPhase('mission');
+            setHasDecrypted(false);
+          }
           else if (serverPhase === 'drawing') setPhase('drawing');
           else if (serverPhase === 'story') setPhase('story');
           else if (serverPhase === 'order') setPhase('order');
@@ -651,6 +655,20 @@ export default function SpyGame() {
     }
   }, [mode, room, myPlayer, sendMessage]);
 
+  const handleDecryptSecret = useCallback(() => {
+    if (mode === 'online' && room && myPlayer && myPlayer.role === 'spy' && !hasDecrypted) {
+      sendMessage({ 
+        action: 'decrypt_secret', 
+        roomId: room.id,
+        payload: {
+          playerId: myPlayer.id,
+          playerName: myPlayer.name
+        }
+      });
+      setHasDecrypted(true);
+    }
+  }, [mode, room, myPlayer, hasDecrypted, sendMessage]);
+
   const handleSubmitOrder = useCallback((order: string[]) => {
     if (mode === 'online' && room && myPlayer) {
       sendMessage({ 
@@ -874,6 +892,7 @@ export default function SpyGame() {
     setVotes({});
     setDrawings([]);
     setWinner(null);
+    setHasDecrypted(false);
     setPhase(mode === 'online' ? 'room_lobby' : 'player_setup');
   }, [mode]);
 
@@ -891,6 +910,7 @@ export default function SpyGame() {
     setDrawings([]);
     setWinner(null);
     setMyPlayerId(null);
+    setHasDecrypted(false);
   }, [mode, room, myPlayerId, sendMessage, clearSession]);
 
   const spyList = useMemo(() => {
@@ -997,6 +1017,8 @@ export default function SpyGame() {
             onSubmitCode={handleSubmitCode}
             codeSubmissions={codeSubmissions}
             myPlayerId={myPlayerId || undefined}
+            onDecryptSecret={mode === 'online' && myPlayer?.role === 'spy' ? handleDecryptSecret : undefined}
+            hasDecrypted={hasDecrypted}
           />
       )}
 

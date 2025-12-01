@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpDown, GripVertical, Check, Send, HelpCircle, Phone, Eye, ChevronUp, ChevronDown, Skull } from 'lucide-react';
+import { ArrowUpDown, GripVertical, Check, Send, AlertCircle, Phone, Eye, ChevronUp, ChevronDown, Skull } from 'lucide-react';
 import type { Mission, PlayerRole, OrderSubmission, Player } from '@shared/schema';
 
 interface OrderPhaseProps {
@@ -172,7 +172,7 @@ export default function OrderPhase({
                 <span className="text-xs font-semibold text-red-400">VOCÊ É ESPIÃO</span>
               </div>
               <p className="text-xs text-red-300/80 text-center flex items-center justify-center gap-1">
-                <HelpCircle className="w-3 h-3" />
+                <AlertCircle className="w-3 h-3" />
                 Critério desconhecido - tente adivinhar a ordem!
               </p>
             </div>
@@ -185,7 +185,7 @@ export default function OrderPhase({
                 <span className="text-xs font-semibold text-yellow-400">VOCÊ É O TOLO</span>
               </div>
               <p className="text-xs text-yellow-300/80 text-center flex items-center justify-center gap-1">
-                <HelpCircle className="w-3 h-3" />
+                <AlertCircle className="w-3 h-3" />
                 Critério desconhecido - seu objetivo é ser eliminado!
               </p>
             </div>

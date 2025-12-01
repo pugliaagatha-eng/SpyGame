@@ -132,6 +132,10 @@ async function handleMessage(ws: ExtendedWebSocket, message: WebSocketMessage & 
       await handleOrderSubmission(ws.roomId!, payload as { playerId: string; playerName: string; order: string[] });
       break;
 
+    case 'decrypt_secret':
+      await handleDecryptSecret(ws.roomId!, payload as { playerId: string; playerName: string });
+      break;
+
     case 'ping':
       sendToClient(ws, { type: 'room_update', payload: { pong: true } });
       break;
@@ -492,6 +496,48 @@ async function handleChatMessage(roomId: string, payload: { playerId: string; pl
     await storage.updateRoom(roomId, { messages: room.messages });
     
     broadcastToRoom(roomId, { type: 'chat_message', payload: chatMessage });
+  }
+}
+
+async function handleDecryptSecret(roomId: string, payload: { playerId: string; playerName: string }) {
+  const room = await storage.getRoom(roomId);
+  if (!room || !room.mission) return;
+  
+  const player = room.players.find(p => p.id === payload.playerId);
+  if (!player || player.role !== 'spy') {
+    return; // Apenas espiões podem descriptografar
+  }
+  
+  // Embaralhar o fato secreto
+  const secretValue = room.mission.secretFact.value || '';
+  const letters = secretValue.split('');
+  for (let i = letters.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [letters[i], letters[j]] = [letters[j], letters[i]];
+  }
+  const scrambledSecret = letters.join('');
+  
+  // Criar mensagem para o chat dos espiões
+  const chatMessage: ChatMessage = {
+    id: Math.random().toString(36).substring(2, 9),
+    playerId: 'system',
+    playerName: '🔓 TRANSCRIÇÃO',
+    message: `${payload.playerName} transcreveu a ligação: "${scrambledSecret}"`,
+    timestamp: Date.now(),
+  };
+  
+  room.spyMessages.push(chatMessage);
+  await storage.updateRoom(roomId, { spyMessages: room.spyMessages });
+  
+  // Enviar para todos os espiões
+  const clients = roomClients[roomId];
+  if (clients) {
+    clients.forEach((client) => {
+      const clientPlayer = room.players.find(p => p.id === client.playerId);
+      if (clientPlayer && clientPlayer.role === 'spy' && client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({ type: 'spy_chat_message', payload: chatMessage }));
+      }
+    });
   }
 }
 

@@ -184,8 +184,8 @@ export default function DrawingCanvas({
                 Desenhe: <span className="neon-text">{word}</span>
               </span>
             ) : (
-              <span className="text-muted-foreground">
-                Dica: <span className="text-secondary">{hint}</span>
+              <span className="text-red-400">
+                Você não sabe o que desenhar. Observe os outros e improvise!
               </span>
             )}
           </CardTitle>
