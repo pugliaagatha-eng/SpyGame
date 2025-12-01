@@ -95,6 +95,15 @@ npm start
 Currently using in-memory storage (MemStorage). Rooms are lost when server restarts. For persistence, a database implementation would be needed.
 
 ## Recent Changes
+- December 1, 2024: Code Mission Improvements
+  - Added code submission input fields in MissionPhase for all players
+  - Players can now submit their code guesses during the mission phase
+  - Code submissions are displayed in DiscussionPhase for comparison
+  - For spies: first digit is NEVER revealed, only 2 random digits from positions 2-5 shown
+  - Spies see scrambled code display (2 revealed in yellow, 3 hidden as "?") + hint
+  - Added CodeSubmission type to schema and WebSocket handler for code_submitted event
+  - Code submissions reset between rounds
+
 - December 1, 2024: Story Phase Implementation
   - Added StoryPhase component for turn-based story contributions (400 chars per player)
   - Story missions: spies only see what others write as hints (no scrambled letters)

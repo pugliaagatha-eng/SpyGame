@@ -80,6 +80,13 @@ export interface StoryContribution {
   timestamp: number;
 }
 
+export interface CodeSubmission {
+  playerId: string;
+  playerName: string;
+  code: string;
+  timestamp: number;
+}
+
 export interface Room {
   id: string;
   code: string;
@@ -105,6 +112,7 @@ export interface Room {
   gameOverReason?: string;
   storyContributions?: StoryContribution[];
   currentStoryPlayerIndex?: number;
+  codeSubmissions?: CodeSubmission[];
 }
 
 export const createRoomSchema = z.object({
@@ -138,6 +146,7 @@ export type WebSocketMessageType =
   | 'spy_chat_message'
   | 'story_contribution'
   | 'story_turn_update'
+  | 'code_submitted'
   | 'error';
 
 export interface WebSocketMessage {

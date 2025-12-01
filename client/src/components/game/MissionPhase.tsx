@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Target, Clock, ChevronRight, Hash, Pencil, ArrowUpDown, KeyRound, BookOpen, Phone, Eye, HelpCircle, Headphones } from 'lucide-react';
-import type { Mission, PlayerRole } from '@shared/schema';
+import { Input } from '@/components/ui/input';
+import { Target, Clock, ChevronRight, Hash, Pencil, ArrowUpDown, KeyRound, BookOpen, Phone, Eye, HelpCircle, Headphones, Check, Send } from 'lucide-react';
+import type { Mission, PlayerRole, CodeSubmission } from '@shared/schema';
 import { MISSION_COUNTS } from '@shared/schema';
 
 interface MissionPhaseProps {
@@ -15,6 +16,9 @@ interface MissionPhaseProps {
   onStartDrawing?: () => void;
   isHost: boolean;
   playerRole?: PlayerRole;
+  onSubmitCode?: (code: string) => void;
+  codeSubmissions?: CodeSubmission[];
+  myPlayerId?: string;
 }
 
 export default function MissionPhase({
@@ -26,8 +30,46 @@ export default function MissionPhase({
   onStartDrawing,
   isHost,
   playerRole,
+  onSubmitCode,
+  codeSubmissions = [],
+  myPlayerId,
 }: MissionPhaseProps) {
   const [showPhoneCall, setShowPhoneCall] = useState(false);
+  const [codeInput, setCodeInput] = useState(['', '', '', '', '']);
+  const [hasSubmittedCode, setHasSubmittedCode] = useState(false);
+  
+  const mySubmission = codeSubmissions.find(c => c.playerId === myPlayerId);
+  
+  useEffect(() => {
+    if (mySubmission) {
+      setHasSubmittedCode(true);
+      setCodeInput(mySubmission.code.split(''));
+    }
+  }, [mySubmission]);
+  
+  const handleCodeDigitChange = (index: number, value: string) => {
+    if (value.length > 1) value = value.slice(-1);
+    if (!/^\d*$/.test(value)) return;
+    
+    const newCode = [...codeInput];
+    newCode[index] = value;
+    setCodeInput(newCode);
+    
+    if (value && index < 4) {
+      const nextInput = document.getElementById(`code-input-${index + 1}`);
+      nextInput?.focus();
+    }
+  };
+  
+  const handleCodeSubmit = () => {
+    const code = codeInput.join('');
+    if (code.length === 5 && onSubmitCode) {
+      onSubmitCode(code);
+      setHasSubmittedCode(true);
+    }
+  };
+  
+  const isCodeComplete = codeInput.every(d => d !== '');
   
   const isAgent = playerRole === 'agent' || playerRole === 'triple';
   const isSpy = playerRole === 'spy';
@@ -36,8 +78,8 @@ export default function MissionPhase({
   const scrambledCodeDisplay = useMemo(() => {
     if (mission.secretFact.type !== 'code' || !isSpy) return null;
     const code = mission.secretFact.value;
-    const indices = [0, 1, 2, 3, 4];
-    const shuffled = indices.sort(() => Math.random() - 0.5);
+    const availableIndices = [1, 2, 3, 4];
+    const shuffled = [...availableIndices].sort(() => Math.random() - 0.5);
     const revealIndices = new Set(shuffled.slice(0, 2));
     return code.split('').map((digit, i) => revealIndices.has(i) ? digit : '?');
   }, [mission.id, mission.secretFact.type, mission.secretFact.value, isSpy]);
@@ -246,18 +288,58 @@ export default function MissionPhase({
                   ))
                 ) : null}
               </div>
-              {isAgent && mission.secretFact.hint && (
-                <p className="text-xs text-center text-green-400/80">
-                  Dica: {mission.secretFact.hint}
-                </p>
-              )}
-              {isSpy && mission.secretFact.hint && (
-                <div className="mt-2 p-2 rounded bg-amber-500/10 border border-amber-500/30">
-                  <p className="text-xs text-center text-amber-400">
+              {mission.secretFact.hint && (
+                <div className={`mt-2 p-2 rounded ${isAgent ? 'bg-green-500/10' : 'bg-amber-500/10 border border-amber-500/30'}`}>
+                  <p className={`text-xs text-center ${isAgent ? 'text-green-400/80' : 'text-amber-400'}`}>
                     Dica: {mission.secretFact.hint}
                   </p>
                 </div>
               )}
+              
+              <div className="mt-4 pt-4 border-t border-green-500/30">
+                <h4 className="text-xs font-semibold text-cyan-400 mb-2 text-center">
+                  {hasSubmittedCode ? 'Seu Palpite (Enviado)' : 'Digite seu palpite:'}
+                </h4>
+                <div className="flex justify-center gap-2">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <input
+                      key={i}
+                      id={`code-input-${i}`}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={codeInput[i]}
+                      onChange={(e) => handleCodeDigitChange(i, e.target.value)}
+                      disabled={hasSubmittedCode}
+                      className={`w-10 h-12 rounded border-2 text-center text-2xl font-mono focus:outline-none focus:ring-2 focus:ring-cyan-400 ${
+                        hasSubmittedCode
+                          ? 'border-cyan-500/50 bg-cyan-500/20 text-cyan-400'
+                          : 'border-cyan-500/30 bg-background/50 text-white'
+                      }`}
+                    />
+                  ))}
+                </div>
+                {!hasSubmittedCode && (
+                  <Button
+                    onClick={handleCodeSubmit}
+                    disabled={!isCodeComplete}
+                    className="w-full mt-3 bg-cyan-600 hover:bg-cyan-700"
+                    size="sm"
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    Enviar Palpite
+                  </Button>
+                )}
+                {hasSubmittedCode && (
+                  <p className="text-xs text-center text-cyan-400/60 mt-2 flex items-center justify-center gap-1">
+                    <Check className="w-3 h-3" />
+                    Palpite enviado com sucesso!
+                  </p>
+                )}
+                <p className="text-xs text-center text-muted-foreground mt-2">
+                  {codeSubmissions.length} jogador(es) já enviaram palpites
+                </p>
+              </div>
             </div>
           )}
 

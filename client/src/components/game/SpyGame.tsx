@@ -29,7 +29,8 @@ import type {
   WebSocketMessage,
   SecretFact,
   ChatMessage,
-  StoryContribution
+  StoryContribution,
+  CodeSubmission
 } from '@shared/schema';
 import { ABILITIES, MISSIONS, getRandomAbility, getMissionAlternatives } from '@shared/schema';
 
@@ -74,6 +75,7 @@ export default function SpyGame() {
   const [spyChatUnreadCount, setSpyChatUnreadCount] = useState(0);
   const [storyContributions, setStoryContributions] = useState<StoryContribution[]>([]);
   const [currentStoryPlayerIndex, setCurrentStoryPlayerIndex] = useState(0);
+  const [codeSubmissions, setCodeSubmissions] = useState<CodeSubmission[]>([]);
   
   const isChatMinimizedRef = useRef(isChatMinimized);
   const isSpyChatMinimizedRef = useRef(isSpyChatMinimized);
@@ -266,6 +268,15 @@ export default function SpyGame() {
           setDrawings(payload.drawings);
           if (payload.status === 'discussion') {
             setPhase('discussion');
+          }
+        }
+        break;
+
+      case 'code_submitted':
+        if (payload && 'id' in payload) {
+          setRoom(payload);
+          if (payload.codeSubmissions) {
+            setCodeSubmissions(payload.codeSubmissions);
           }
         }
         break;
@@ -567,6 +578,20 @@ export default function SpyGame() {
       }
     }
   }, [mode, room, mission, sendMessage]);
+
+  const handleSubmitCode = useCallback((code: string) => {
+    if (mode === 'online' && room && myPlayer) {
+      sendMessage({ 
+        action: 'submit_code', 
+        roomId: room.id,
+        payload: {
+          playerId: myPlayer.id,
+          playerName: myPlayer.name,
+          code
+        }
+      });
+    }
+  }, [mode, room, myPlayer, sendMessage]);
 
   const handleSubmitDrawing = useCallback((imageData: string) => {
     const activePlayers = players.filter(p => !p.isEliminated);
@@ -891,6 +916,9 @@ export default function SpyGame() {
             onStartDrawing={handleStartMission}
             isHost={myPlayer?.isHost || false}
             playerRole={mode === 'online' ? myPlayer?.role : currentPlayer?.role}
+            onSubmitCode={handleSubmitCode}
+            codeSubmissions={codeSubmissions}
+            myPlayerId={myPlayerId || undefined}
           />
       )}
 
@@ -935,6 +963,7 @@ export default function SpyGame() {
           players={players}
           drawings={drawings}
           storyContributions={storyContributions}
+          codeSubmissions={codeSubmissions}
           duration={90}
           onStartVoting={handleStartVoting}
           isOnlineMode={mode === 'online'}

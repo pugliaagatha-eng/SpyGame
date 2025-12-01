@@ -555,6 +555,8 @@ export class MemStorage implements IStorage {
           room.mission = getRandomMission();
           room.drawings = [];
           room.votes = {};
+          room.codeSubmissions = [];
+          room.storyContributions = [];
           room.status = 'mission';
           room.players.forEach((p: Player) => {
             p.hasVoted = false;

@@ -1,15 +1,16 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Users, ChevronRight, AlertTriangle, BookOpen } from 'lucide-react';
+import { MessageSquare, Users, ChevronRight, AlertTriangle, BookOpen, KeyRound } from 'lucide-react';
 import Timer from './Timer';
-import type { Player, Mission, DrawingData, StoryContribution } from '@shared/schema';
+import type { Player, Mission, DrawingData, StoryContribution, CodeSubmission } from '@shared/schema';
 
 interface DiscussionPhaseProps {
   mission: Mission;
   players: Player[];
   drawings: DrawingData[];
   storyContributions?: StoryContribution[];
+  codeSubmissions?: CodeSubmission[];
   duration: number;
   onStartVoting: () => void;
   isOnlineMode?: boolean;
@@ -21,6 +22,7 @@ export default function DiscussionPhase({
   players,
   drawings,
   storyContributions = [],
+  codeSubmissions = [],
   duration,
   onStartVoting,
   isOnlineMode = false,
@@ -102,6 +104,35 @@ export default function DiscussionPhase({
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {codeSubmissions.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <KeyRound className="w-4 h-4" />
+                Palpites de Código
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {codeSubmissions.map((submission, index) => (
+                  <div 
+                    key={index}
+                    className="p-3 rounded-lg bg-green-500/10 border border-green-500/30 text-center"
+                  >
+                    <p className="text-xs text-green-400 font-semibold mb-2">{submission.playerName}</p>
+                    <div className="flex justify-center gap-1">
+                      {submission.code.split('').map((digit, i) => (
+                        <div 
+                          key={i} 
+                          className="w-7 h-8 rounded border border-green-500/50 bg-green-500/20 flex items-center justify-center text-lg font-mono text-green-300"
+                        >
+                          {digit}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
