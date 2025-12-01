@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import CyberBackground from './CyberBackground';
 import SplashScreen from './SplashScreen';
 import RoomLobby from './RoomLobby';
@@ -68,10 +68,24 @@ export default function SpyGame() {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isChatMinimized, setIsChatMinimized] = useState(false);
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
   const [spyChatMessages, setSpyChatMessages] = useState<ChatMessage[]>([]);
   const [isSpyChatMinimized, setIsSpyChatMinimized] = useState(false);
+  const [spyChatUnreadCount, setSpyChatUnreadCount] = useState(0);
   const [storyContributions, setStoryContributions] = useState<StoryContribution[]>([]);
   const [currentStoryPlayerIndex, setCurrentStoryPlayerIndex] = useState(0);
+  
+  const isChatMinimizedRef = useRef(isChatMinimized);
+  const isSpyChatMinimizedRef = useRef(isSpyChatMinimized);
+  
+  useEffect(() => {
+    isChatMinimizedRef.current = isChatMinimized;
+  }, [isChatMinimized]);
+  
+  useEffect(() => {
+    isSpyChatMinimizedRef.current = isSpyChatMinimized;
+  }, [isSpyChatMinimized]);
+  
   const { toast } = useToast();
   const { playWinSound } = useAudio();
 
@@ -285,12 +299,18 @@ export default function SpyGame() {
       case 'chat_message':
         if (message.payload) {
           setChatMessages(prev => [...prev, message.payload as ChatMessage]);
+          if (isChatMinimizedRef.current) {
+            setChatUnreadCount(prev => prev + 1);
+          }
         }
         break;
 
       case 'spy_chat_message':
         if (message.payload) {
           setSpyChatMessages(prev => [...prev, message.payload as ChatMessage]);
+          if (isSpyChatMinimizedRef.current) {
+            setSpyChatUnreadCount(prev => prev + 1);
+          }
         }
         break;
 
@@ -978,7 +998,13 @@ export default function SpyGame() {
             }
           }}
           isMinimized={isChatMinimized}
-          onToggleMinimize={() => setIsChatMinimized(!isChatMinimized)}
+          onToggleMinimize={() => {
+            if (isChatMinimized) {
+              setChatUnreadCount(0);
+            }
+            setIsChatMinimized(!isChatMinimized);
+          }}
+          unreadCount={chatUnreadCount}
         />
       )}
 
@@ -997,7 +1023,13 @@ export default function SpyGame() {
             }
           }}
           isMinimized={isSpyChatMinimized}
-          onToggleMinimize={() => setIsSpyChatMinimized(!isSpyChatMinimized)}
+          onToggleMinimize={() => {
+            if (isSpyChatMinimized) {
+              setSpyChatUnreadCount(0);
+            }
+            setIsSpyChatMinimized(!isSpyChatMinimized);
+          }}
+          unreadCount={spyChatUnreadCount}
         />
       )}
     </div>

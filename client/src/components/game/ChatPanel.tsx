@@ -20,6 +20,7 @@ interface ChatPanelProps {
   onSendMessage: (message: string, emoji?: string) => void;
   isMinimized?: boolean;
   onToggleMinimize?: () => void;
+  unreadCount?: number;
 }
 
 const EMOJIS = [
@@ -38,6 +39,7 @@ export default function ChatPanel({
   onSendMessage,
   isMinimized = false,
   onToggleMinimize,
+  unreadCount = 0,
 }: ChatPanelProps) {
   const [inputMessage, setInputMessage] = useState('');
   const [selectedEmoji, setSelectedEmoji] = useState<string | undefined>();
@@ -66,10 +68,15 @@ export default function ChatPanel({
     return (
       <Button
         variant="outline"
-        className="fixed bottom-4 left-4 z-50 bg-background/80 backdrop-blur-sm rounded-full w-16 h-16 p-0 shadow-lg hover-elevate"
+        className="fixed bottom-4 left-4 z-50 bg-background/80 backdrop-blur-sm rounded-full w-16 h-16 p-0 shadow-lg hover-elevate relative"
         onClick={onToggleMinimize}
       >
         <MessageCircle className="w-6 h-6" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
       </Button>
     );
   }

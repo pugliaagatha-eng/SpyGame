@@ -20,6 +20,7 @@ interface SpyChatPanelProps {
   onSendMessage: (message: string, emoji?: string) => void;
   isMinimized?: boolean;
   onToggleMinimize?: () => void;
+  unreadCount?: number;
 }
 
 const EMOJIS = [
@@ -38,6 +39,7 @@ export default function SpyChatPanel({
   onSendMessage,
   isMinimized = false,
   onToggleMinimize,
+  unreadCount = 0,
 }: SpyChatPanelProps) {
   const [inputMessage, setInputMessage] = useState('');
   const [selectedEmoji, setSelectedEmoji] = useState<string | undefined>();
@@ -65,11 +67,15 @@ export default function SpyChatPanel({
     return (
       <Button
         variant="outline"
-        className="fixed bottom-4 right-4 z-50 bg-red-900/80 backdrop-blur-sm border-red-500/50 text-red-300 hover:bg-red-800/80 hover:text-red-200 shadow-lg shadow-red-500/20 rounded-full w-16 h-16 p-0"
+        className="fixed bottom-4 right-4 z-50 bg-red-900/80 backdrop-blur-sm border-red-500/50 text-red-300 hover:bg-red-800/80 hover:text-red-200 shadow-lg shadow-red-500/20 rounded-full w-16 h-16 p-0 relative"
         onClick={onToggleMinimize}
       >
         <Eye className="w-6 h-6" />
-        
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 animate-pulse">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
       </Button>
     );
   }

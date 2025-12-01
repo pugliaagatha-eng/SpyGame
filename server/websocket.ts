@@ -157,27 +157,27 @@ async function handleStoryContribution(roomId: string, payload: { playerId: stri
   const newIndex = currentIndex + 1;
   
   if (newIndex >= activePlayers.length) {
-    room.status = 'discussion';
-    room.currentStoryPlayerIndex = 0;
     await storage.updateRoom(roomId, { 
       storyContributions,
       currentStoryPlayerIndex: 0,
       status: 'discussion'
     });
-    broadcastToRoom(roomId, { type: 'phase_changed', payload: { ...room, storyContributions, status: 'discussion' } });
+    const updatedRoom = await storage.getRoom(roomId);
+    if (updatedRoom) {
+      broadcastToRoom(roomId, { type: 'phase_changed', payload: updatedRoom });
+    }
   } else {
     await storage.updateRoom(roomId, { 
       storyContributions,
       currentStoryPlayerIndex: newIndex
     });
-    broadcastToRoom(roomId, { 
-      type: 'story_turn_update', 
-      payload: { 
-        ...room, 
-        storyContributions,
-        currentStoryPlayerIndex: newIndex
-      } 
-    });
+    const updatedRoom = await storage.getRoom(roomId);
+    if (updatedRoom) {
+      broadcastToRoom(roomId, { 
+        type: 'story_turn_update', 
+        payload: updatedRoom
+      });
+    }
   }
 }
 
