@@ -61,7 +61,7 @@ export default function OrderPhase({
 
   useEffect(() => {
     if (timeRemaining <= 0) {
-      if (!hasSubmitted && items.length === rankingItems.length) {
+      if (!hasSubmitted && items.length > 0 && items.length === rankingItems.length) {
         onSubmitOrder(items);
         setHasSubmitted(true);
       }
