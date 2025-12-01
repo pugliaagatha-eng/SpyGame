@@ -81,17 +81,6 @@ export default function RoomLobby({
 
   if (room) {
     return (
-      <>
-        <Button
-          variant="outline"
-          className="fixed top-4 left-4 z-50 bg-background/80 backdrop-blur-sm rounded-full"
-          onClick={onBack}
-          data-testid="button-leave-room"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Sair da Sala
-        </Button>
-
         <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6">
           <Card className="w-full max-w-sm sm:max-w-md neon-border">
           <CardHeader className="text-center">
@@ -170,12 +159,12 @@ export default function RoomLobby({
               {isHost ? (
                 <Button
                   className="w-full"
-                  disabled={room.players.length < 3}
+                  disabled={room.players.length < 5}
                   onClick={onStartGame}
                   data-testid="button-start-game"
                 >
-                  {room.players.length < 3 
-                    ? `Aguardando jogadores (${room.players.length}/3)` 
+                  {room.players.length < 5 
+                    ? `Aguardando jogadores (${room.players.length}/5)` 
                     : 'Iniciar Jogo'}
                 </Button>
               ) : (
@@ -187,7 +176,6 @@ export default function RoomLobby({
           </CardContent>
         </Card>
         </div>
-      </>
     );
   }
 
