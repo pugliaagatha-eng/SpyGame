@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +32,15 @@ export default function MissionPhase({
   const isAgent = playerRole === 'agent' || playerRole === 'triple';
   const isSpy = playerRole === 'spy';
   const isStoryMission = mission.secretFact.type === 'story';
+  
+  const scrambledCodeDisplay = useMemo(() => {
+    if (mission.secretFact.type !== 'code' || !isSpy) return null;
+    const code = mission.secretFact.value;
+    const indices = [0, 1, 2, 3, 4];
+    const shuffled = indices.sort(() => Math.random() - 0.5);
+    const revealIndices = new Set(shuffled.slice(0, 2));
+    return code.split('').map((digit, i) => revealIndices.has(i) ? digit : '?');
+  }, [mission.id, mission.secretFact.type, mission.secretFact.value, isSpy]);
   
   useEffect(() => {
     if (isAgent && !isStoryMission) {
@@ -225,18 +234,29 @@ export default function MissionPhase({
                       {digit}
                     </div>
                   ))
-                ) : (
-                  [1, 2, 3, 4, 5].map((_, i) => (
-                    <div key={i} className="w-10 h-12 rounded border-2 border-red-500/50 bg-background/50 flex items-center justify-center text-2xl font-mono text-red-400">
-                      ?
+                ) : scrambledCodeDisplay ? (
+                  scrambledCodeDisplay.map((char, i) => (
+                    <div key={i} className={`w-10 h-12 rounded border-2 flex items-center justify-center text-2xl font-mono ${
+                      char === '?' 
+                        ? 'border-red-500/50 bg-background/50 text-red-400' 
+                        : 'border-amber-500/50 bg-amber-500/20 text-amber-400'
+                    }`}>
+                      {char}
                     </div>
                   ))
-                )}
+                ) : null}
               </div>
-              {isSpy && (
-                <p className="text-xs text-center text-red-400/60">
-                  Use sua habilidade para decifrar o código
+              {isAgent && mission.secretFact.hint && (
+                <p className="text-xs text-center text-green-400/80">
+                  Dica: {mission.secretFact.hint}
                 </p>
+              )}
+              {isSpy && mission.secretFact.hint && (
+                <div className="mt-2 p-2 rounded bg-amber-500/10 border border-amber-500/30">
+                  <p className="text-xs text-center text-amber-400">
+                    Dica: {mission.secretFact.hint}
+                  </p>
+                </div>
               )}
             </div>
           )}
