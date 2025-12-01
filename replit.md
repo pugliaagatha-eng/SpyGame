@@ -129,6 +129,16 @@ npm start
 Currently using in-memory storage (MemStorage). Rooms are lost when server restarts. For persistence, a database implementation would be needed.
 
 ## Recent Changes
+- December 1, 2024: React #130 Black Screen Fix and Ability Usage Fix
+  - Added type safety (typeof checks) for all dynamic values that might be objects:
+    - mission.secretFact.hint, mission.secretFact.value
+    - ability.name, ability.description
+  - Added missing ability icons: scramble_fact (Shuffle), force_revote_30s (Timer)
+  - Fixed peek_role ability being usable multiple times:
+    - Added localUsedAbilities state in AbilityPanel to track used abilities client-side
+    - Abilities are marked as used immediately on use, preventing double-clicks
+  - Components updated: AbilityPanel, DiscussionPhase, MissionPhase, RoleReveal, VotingPhase
+
 - December 1, 2024: Complete Spy Information Redesign
   - Fixed React error #130 in VotingPhase and OrderPhase by replacing HelpCircle with Info/AlertCircle icons
   - Removed ALL hints from spy views (MissionPhase, DrawingCanvas, DiscussionPhase)
