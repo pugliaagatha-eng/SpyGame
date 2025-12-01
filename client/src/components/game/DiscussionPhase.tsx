@@ -1,9 +1,10 @@
+import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Users, ChevronRight, AlertTriangle, BookOpen, KeyRound, ArrowUpDown } from 'lucide-react';
+import { MessageSquare, Users, ChevronRight, AlertTriangle, BookOpen, KeyRound, ArrowUpDown, Phone, Eye, Skull, HelpCircle } from 'lucide-react';
 import Timer from './Timer';
-import type { Player, Mission, DrawingData, StoryContribution, CodeSubmission, OrderSubmission } from '@shared/schema';
+import type { Player, Mission, DrawingData, StoryContribution, CodeSubmission, OrderSubmission, PlayerRole } from '@shared/schema';
 
 interface DiscussionPhaseProps {
   mission: Mission;
@@ -16,6 +17,7 @@ interface DiscussionPhaseProps {
   onStartVoting: () => void;
   isOnlineMode?: boolean;
   isHost?: boolean;
+  playerRole?: PlayerRole;
 }
 
 export default function DiscussionPhase({
@@ -29,8 +31,18 @@ export default function DiscussionPhase({
   onStartVoting,
   isOnlineMode = false,
   isHost = true,
+  playerRole,
 }: DiscussionPhaseProps) {
   const activePlayers = players.filter(p => !p.isEliminated);
+  const isAgent = playerRole === 'agent' || playerRole === 'triple';
+  const isSpy = playerRole === 'spy';
+  const isJester = playerRole === 'jester';
+  const doesNotKnowSecret = isSpy || isJester;
+
+  const shuffledOrderForDisplay = useMemo(() => {
+    if (!mission.secretFact.rankingItems) return [];
+    return [...mission.secretFact.rankingItems].sort(() => Math.random() - 0.5);
+  }, [mission.id]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6">
@@ -63,6 +75,67 @@ export default function DiscussionPhase({
               </p>
             ) : null}
           </div>
+
+          {isAgent && (
+            <div className="p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
+              <div className="flex items-center gap-2 mb-2">
+                <Phone className="w-4 h-4 text-cyan-400" />
+                <span className="text-sm font-semibold text-cyan-400">VOCÊ É AGENTE</span>
+              </div>
+              <p className="text-sm text-cyan-300/80">
+                Você recebeu o telefonema secreto com a informação correta. 
+                Analise as respostas dos outros jogadores para identificar quem NÃO tinha essa informação.
+              </p>
+              {mission.secretFact.type === 'order' && mission.secretFact.rankingCriteria && (
+                <p className="text-xs text-cyan-400/70 mt-2">
+                  Critério correto: <span className="font-semibold">{mission.secretFact.rankingCriteria}</span>
+                </p>
+              )}
+              {mission.secretFact.type === 'code' && (
+                <p className="text-xs text-cyan-400/70 mt-2">
+                  Código correto: <span className="font-mono font-semibold">{mission.secretFact.value}</span>
+                </p>
+              )}
+            </div>
+          )}
+
+          {isSpy && (
+            <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30">
+              <div className="flex items-center gap-2 mb-2">
+                <Eye className="w-4 h-4 text-red-400" />
+                <span className="text-sm font-semibold text-red-400">VOCÊ É ESPIÃO</span>
+              </div>
+              <p className="text-sm text-red-300/80">
+                Você NÃO recebeu o telefonema secreto. Tente se passar por agente analisando as respostas dos outros. 
+                Os agentes sabiam a informação correta - tente identificar padrões nas respostas deles.
+              </p>
+              {mission.secretFact.type === 'order' && (
+                <p className="text-xs text-red-400/70 mt-2 flex items-center gap-1">
+                  <HelpCircle className="w-3 h-3" />
+                  Você não sabia o critério de ordenação. Observe quais ordens são similares entre si.
+                </p>
+              )}
+              {mission.secretFact.type === 'code' && (
+                <p className="text-xs text-red-400/70 mt-2 flex items-center gap-1">
+                  <HelpCircle className="w-3 h-3" />
+                  Você só viu 2 dos 5 dígitos. Compare os palpites para deduzir o código completo.
+                </p>
+              )}
+            </div>
+          )}
+
+          {isJester && (
+            <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+              <div className="flex items-center gap-2 mb-2">
+                <Skull className="w-4 h-4 text-yellow-400" />
+                <span className="text-sm font-semibold text-yellow-400">VOCÊ É O TOLO</span>
+              </div>
+              <p className="text-sm text-yellow-300/80">
+                Você NÃO recebeu o telefonema secreto. Seu objetivo é parecer suspeito para ser eliminado!
+                Aja de forma duvidosa mas não óbvia demais.
+              </p>
+            </div>
+          )}
 
           {drawings.length > 0 && (
             <div className="space-y-4">
@@ -145,6 +218,18 @@ export default function DiscussionPhase({
                 <ArrowUpDown className="w-4 h-4" />
                 Ordens Enviadas
               </h3>
+              
+              {shuffledOrderForDisplay.length > 0 && (
+                <div className="p-3 rounded-lg bg-muted/30 border border-border text-center">
+                  <p className="text-xs text-muted-foreground mb-2">Emojis desta missão (ordem aleatória):</p>
+                  <div className="flex justify-center gap-2 text-2xl">
+                    {shuffledOrderForDisplay.map((emoji, i) => (
+                      <span key={i}>{emoji}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {orderSubmissions.map((submission, index) => (
                   <div 

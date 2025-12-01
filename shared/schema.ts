@@ -156,6 +156,7 @@ export type WebSocketMessageType =
   | 'story_contribution'
   | 'story_turn_update'
   | 'code_submitted'
+  | 'order_submitted'
   | 'error';
 
 export interface WebSocketMessage {

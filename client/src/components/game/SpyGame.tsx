@@ -1035,6 +1035,7 @@ export default function SpyGame() {
           onStartVoting={handleStartVoting}
           isOnlineMode={mode === 'online'}
           isHost={isHost}
+          playerRole={myPlayer?.role}
         />
       )}
 
