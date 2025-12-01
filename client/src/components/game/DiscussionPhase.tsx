@@ -81,6 +81,31 @@ export default function DiscussionPhase({
 
   console.log('DiscussionPhase render CONTINUING - props valid');
 
+  console.log('DiscussionPhase JSX elements check:', {
+    MessageSquareType: typeof MessageSquare,
+    UsersType: typeof Users,
+    ChevronRightType: typeof ChevronRight,
+    AlertTriangleType: typeof AlertTriangle,
+    BookOpenType: typeof BookOpen,
+    KeyRoundType: typeof KeyRound,
+    ArrowUpDownType: typeof ArrowUpDown,
+    PhoneType: typeof Phone,
+    EyeType: typeof Eye,
+    SkullType: typeof Skull,
+    HelpCircleType: typeof HelpCircle,
+    BadgeType: typeof Badge,
+    TimerType: typeof Timer,
+    ButtonType: typeof Button,
+    CardType: typeof Card,
+    CardContentType: typeof CardContent,
+    CardHeaderType: typeof CardHeader,
+    CardTitleType: typeof CardTitle,
+    isSpy,
+    isAgent,
+    isJester,
+    missionType: mission?.secretFact?.type,
+  });
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6">
       <Card className="w-full max-w-2xl neon-border">
