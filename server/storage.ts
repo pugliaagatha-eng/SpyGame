@@ -525,6 +525,9 @@ export class MemStorage implements IStorage {
           room.status = 'story';
           room.currentStoryPlayerIndex = 0;
           room.storyContributions = [];
+        } else if (room.mission?.secretFact.type === 'order') {
+          room.status = 'order';
+          room.orderSubmissions = [];
         } else {
           room.status = 'discussion';
         }
@@ -533,6 +536,9 @@ export class MemStorage implements IStorage {
         room.status = 'discussion';
         break;
       case 'drawing':
+        room.status = 'discussion';
+        break;
+      case 'order':
         room.status = 'discussion';
         break;
       case 'discussion':
@@ -557,6 +563,7 @@ export class MemStorage implements IStorage {
           room.votes = {};
           room.codeSubmissions = [];
           room.storyContributions = [];
+          room.orderSubmissions = [];
           room.status = 'mission';
           room.players.forEach((p: Player) => {
             p.hasVoted = false;

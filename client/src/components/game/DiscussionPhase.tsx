@@ -1,9 +1,9 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Users, ChevronRight, AlertTriangle, BookOpen, KeyRound } from 'lucide-react';
+import { MessageSquare, Users, ChevronRight, AlertTriangle, BookOpen, KeyRound, ArrowUpDown } from 'lucide-react';
 import Timer from './Timer';
-import type { Player, Mission, DrawingData, StoryContribution, CodeSubmission } from '@shared/schema';
+import type { Player, Mission, DrawingData, StoryContribution, CodeSubmission, OrderSubmission } from '@shared/schema';
 
 interface DiscussionPhaseProps {
   mission: Mission;
@@ -11,6 +11,7 @@ interface DiscussionPhaseProps {
   drawings: DrawingData[];
   storyContributions?: StoryContribution[];
   codeSubmissions?: CodeSubmission[];
+  orderSubmissions?: OrderSubmission[];
   duration: number;
   onStartVoting: () => void;
   isOnlineMode?: boolean;
@@ -23,6 +24,7 @@ export default function DiscussionPhase({
   drawings,
   storyContributions = [],
   codeSubmissions = [],
+  orderSubmissions = [],
   duration,
   onStartVoting,
   isOnlineMode = false,
@@ -128,6 +130,35 @@ export default function DiscussionPhase({
                           className="w-7 h-8 rounded border border-green-500/50 bg-green-500/20 flex items-center justify-center text-lg font-mono text-green-300"
                         >
                           {digit}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {orderSubmissions.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <ArrowUpDown className="w-4 h-4" />
+                Ordens Enviadas
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {orderSubmissions.map((submission, index) => (
+                  <div 
+                    key={index}
+                    className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30 text-center"
+                  >
+                    <p className="text-xs text-blue-400 font-semibold mb-2">{submission.playerName}</p>
+                    <div className="flex justify-center gap-1">
+                      {submission.order.map((emoji, i) => (
+                        <div 
+                          key={i} 
+                          className="w-8 h-10 rounded border border-blue-500/50 bg-blue-500/20 flex items-center justify-center text-xl"
+                        >
+                          {emoji}
                         </div>
                       ))}
                     </div>

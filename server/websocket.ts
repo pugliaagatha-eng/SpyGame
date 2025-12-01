@@ -124,6 +124,10 @@ async function handleMessage(ws: ExtendedWebSocket, message: WebSocketMessage & 
       await handleCodeSubmission(ws.roomId!, payload as { playerId: string; playerName: string; code: string });
       break;
 
+    case 'submit_order':
+      await handleOrderSubmission(ws.roomId!, payload as { playerId: string; playerName: string; order: string[] });
+      break;
+
     case 'ping':
       sendToClient(ws, { type: 'room_update', payload: { pong: true } });
       break;
@@ -212,6 +216,36 @@ async function handleCodeSubmission(roomId: string, payload: { playerId: string;
   const updatedRoom = await storage.getRoom(roomId);
   if (updatedRoom) {
     broadcastToRoom(roomId, { type: 'code_submitted', payload: updatedRoom });
+  }
+}
+
+async function handleOrderSubmission(roomId: string, payload: { playerId: string; playerName: string; order: string[] }) {
+  const room = await storage.getRoom(roomId);
+  if (!room) return;
+  
+  const orderSubmissions = room.orderSubmissions || [];
+  
+  const existingIndex = orderSubmissions.findIndex(o => o.playerId === payload.playerId);
+  if (existingIndex >= 0) {
+    orderSubmissions[existingIndex] = {
+      playerId: payload.playerId,
+      playerName: payload.playerName,
+      order: payload.order,
+      timestamp: Date.now(),
+    };
+  } else {
+    orderSubmissions.push({
+      playerId: payload.playerId,
+      playerName: payload.playerName,
+      order: payload.order,
+      timestamp: Date.now(),
+    });
+  }
+  
+  await storage.updateRoom(roomId, { orderSubmissions });
+  const updatedRoom = await storage.getRoom(roomId);
+  if (updatedRoom) {
+    broadcastToRoom(roomId, { type: 'order_submitted', payload: updatedRoom });
   }
 }
 

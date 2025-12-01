@@ -10,6 +10,7 @@ export type GamePhase =
   | 'mission'
   | 'drawing'
   | 'story'
+  | 'order'
   | 'discussion'
   | 'voting'
   | 'voting_result'
@@ -87,6 +88,13 @@ export interface CodeSubmission {
   timestamp: number;
 }
 
+export interface OrderSubmission {
+  playerId: string;
+  playerName: string;
+  order: string[];
+  timestamp: number;
+}
+
 export interface Room {
   id: string;
   code: string;
@@ -113,6 +121,7 @@ export interface Room {
   storyContributions?: StoryContribution[];
   currentStoryPlayerIndex?: number;
   codeSubmissions?: CodeSubmission[];
+  orderSubmissions?: OrderSubmission[];
 }
 
 export const createRoomSchema = z.object({

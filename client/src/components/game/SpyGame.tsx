@@ -7,6 +7,7 @@ import RoleReveal from './RoleReveal';
 import MissionPhase from './MissionPhase';
 import DrawingCanvas from './DrawingCanvas';
 import StoryPhase from './StoryPhase';
+import OrderPhase from './OrderPhase';
 import DiscussionPhase from './DiscussionPhase';
 import VotingPhase from './VotingPhase';
 import VotingResult from './VotingResult';
@@ -30,7 +31,8 @@ import type {
   SecretFact,
   ChatMessage,
   StoryContribution,
-  CodeSubmission
+  CodeSubmission,
+  OrderSubmission
 } from '@shared/schema';
 import { ABILITIES, MISSIONS, getRandomAbility, getMissionAlternatives } from '@shared/schema';
 
@@ -44,6 +46,7 @@ type LocalGamePhase =
   | 'mission'
   | 'drawing'
   | 'story'
+  | 'order'
   | 'discussion'
   | 'voting'
   | 'voting_result'
@@ -76,6 +79,7 @@ export default function SpyGame() {
   const [storyContributions, setStoryContributions] = useState<StoryContribution[]>([]);
   const [currentStoryPlayerIndex, setCurrentStoryPlayerIndex] = useState(0);
   const [codeSubmissions, setCodeSubmissions] = useState<CodeSubmission[]>([]);
+  const [orderSubmissions, setOrderSubmissions] = useState<OrderSubmission[]>([]);
   
   const isChatMinimizedRef = useRef(isChatMinimized);
   const isSpyChatMinimizedRef = useRef(isSpyChatMinimized);
@@ -158,6 +162,8 @@ export default function SpyGame() {
           else if (serverPhase === 'role_reveal') setPhase('role_reveal');
           else if (serverPhase === 'mission') setPhase('mission');
           else if (serverPhase === 'drawing') setPhase('drawing');
+          else if (serverPhase === 'story') setPhase('story');
+          else if (serverPhase === 'order') setPhase('order');
           else if (serverPhase === 'discussion') setPhase('discussion');
           else if (serverPhase === 'voting') setPhase('voting');
           else if (serverPhase === 'voting_result') setPhase('voting_result');
@@ -189,12 +195,21 @@ export default function SpyGame() {
       case 'room_update':
       case 'player_joined':
               case 'player_left':
-              case 'player_kicked': // Adicionado para lidar com a expulsão
+              case 'player_kicked':
                 if (payload && 'id' in payload) {
                   setRoom(payload);
                   setPlayers(payload.players);
                   
-                  // Se o jogador expulso for o próprio usuário
+                  if (payload.storyContributions) {
+                    setStoryContributions(payload.storyContributions);
+                  }
+                  if (payload.codeSubmissions) {
+                    setCodeSubmissions(payload.codeSubmissions);
+                  }
+                  if (payload.orderSubmissions) {
+                    setOrderSubmissions(payload.orderSubmissions);
+                  }
+                  
                   if (message.type === 'player_kicked' && payload.players.every(p => p.id !== myPlayerId)) {
                     toast({ title: 'Você foi expulso!', description: 'O host removeu você da sala.', variant: 'destructive' });
                     setRoom(null);
@@ -233,6 +248,12 @@ export default function SpyGame() {
           if (payload.currentStoryPlayerIndex !== undefined) {
             setCurrentStoryPlayerIndex(payload.currentStoryPlayerIndex);
           }
+          if (payload.codeSubmissions) {
+            setCodeSubmissions(payload.codeSubmissions);
+          }
+          if (payload.orderSubmissions) {
+            setOrderSubmissions(payload.orderSubmissions);
+          }
           
           const serverPhase = payload.status;
           if (serverPhase === 'waiting') setPhase('room_lobby');
@@ -240,6 +261,7 @@ export default function SpyGame() {
           else if (serverPhase === 'mission') setPhase('mission');
           else if (serverPhase === 'drawing') setPhase('drawing');
           else if (serverPhase === 'story') setPhase('story');
+          else if (serverPhase === 'order') setPhase('order');
           else if (serverPhase === 'discussion') setPhase('discussion');
           else if (serverPhase === 'voting') setPhase('voting');
           else if (serverPhase === 'voting_result') setPhase('voting_result');
@@ -247,6 +269,7 @@ export default function SpyGame() {
             setPhase('game_over');
             setWinner(payload.winner);
           }
+          
         }
         break;
 
@@ -277,6 +300,15 @@ export default function SpyGame() {
           setRoom(payload);
           if (payload.codeSubmissions) {
             setCodeSubmissions(payload.codeSubmissions);
+          }
+        }
+        break;
+
+      case 'order_submitted':
+        if (payload && 'id' in payload) {
+          setRoom(payload);
+          if (payload.orderSubmissions) {
+            setOrderSubmissions(payload.orderSubmissions);
           }
         }
         break;
@@ -592,6 +624,26 @@ export default function SpyGame() {
       });
     }
   }, [mode, room, myPlayer, sendMessage]);
+
+  const handleSubmitOrder = useCallback((order: string[]) => {
+    if (mode === 'online' && room && myPlayer) {
+      sendMessage({ 
+        action: 'submit_order', 
+        roomId: room.id,
+        payload: {
+          playerId: myPlayer.id,
+          playerName: myPlayer.name,
+          order
+        }
+      });
+    }
+  }, [mode, room, myPlayer, sendMessage]);
+
+  const handleFinishOrder = useCallback(() => {
+    if (mode === 'online' && room) {
+      sendMessage({ action: 'next_phase', roomId: room.id });
+    }
+  }, [mode, room, sendMessage]);
 
   const handleSubmitDrawing = useCallback((imageData: string) => {
     const activePlayers = players.filter(p => !p.isEliminated);
@@ -957,6 +1009,20 @@ export default function SpyGame() {
         />
       )}
 
+      {phase === 'order' && mission && myPlayer && (
+        <OrderPhase
+          mission={mission}
+          players={players}
+          currentPlayerId={myPlayerId}
+          playerRole={myPlayer.role}
+          orderSubmissions={orderSubmissions}
+          onSubmitOrder={handleSubmitOrder}
+          onFinishOrder={handleFinishOrder}
+          isHost={isHost}
+          duration={mission.duration}
+        />
+      )}
+
       {phase === 'discussion' && mission && (
         <DiscussionPhase
           mission={mission}
@@ -964,6 +1030,7 @@ export default function SpyGame() {
           drawings={drawings}
           storyContributions={storyContributions}
           codeSubmissions={codeSubmissions}
+          orderSubmissions={orderSubmissions}
           duration={90}
           onStartVoting={handleStartVoting}
           isOnlineMode={mode === 'online'}

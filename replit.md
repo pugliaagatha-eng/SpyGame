@@ -1,7 +1,7 @@
 # SpyGamePlus
 
 ## Overview
-SpyGamePlus is a multiplayer social deduction game where players take on roles as Agents, Spies, Triple Agents, or Jesters. Players work together (or against each other) through missions, voting, and discussions to identify the spies among them.
+SpyGamePlus is a multiplayer social deduction game (minimum 5 players, maximum 12) where players take on roles as Agents, Spies, Triple Agents, or Jesters. Players work together (or against each other) through missions, voting, and discussions to identify the spies among them.
 
 ## Tech Stack
 - **Frontend**: React 18 + Vite + TypeScript
@@ -35,17 +35,46 @@ SpyGamePlus is a multiplayer social deduction game where players take on roles a
 
 ## Key Features
 - **8 Unique Abilities**: Including Shield, Swap Vote, Extra Time, Force Revote, Peek Role, Negative Vote, Forensic Investigation, and Scramble Fact
-- **4 Mission Types**: Exactly 4 types of missions:
-  - **Desenho (Drawing)**: 15 missions - players draw a secret word with a hint
-  - **Ordem (Order)**: 12 missions - drag 4 emojis in the correct order by criteria
-  - **Código Secreto (Code)**: 12 missions - enter a 5-digit secret code
-  - **História (Story)**: 10 missions - agents know a story, spies don't, each player writes 400 chars
+- **4 Mission Types**: Exactly 4 types of missions with dedicated phase components:
+  - **Desenho (Drawing)**: 15 missions - Agents draw a secret word, Spies improvise
+  - **Ordem (Order)**: 12 missions - Drag 4 emojis into the correct order based on a criteria
+  - **Código Secreto (Code)**: 12 missions - Enter a 5-digit secret code
+  - **História (Story)**: 10 missions - Each player writes 400 characters to continue a story
 - **Real-time Communication**: WebSocket-based synchronization for multiplayer gameplay
 - **Voting System**: Tie detection and elimination mechanics
 - **Drawing Canvas**: Interactive canvas for drawing missions
 - **Audio System**: Background music and victory sound effects
 - **Auto-reconnect**: Players can rejoin games after disconnection
 - **Spy Chat**: Secret communication channel for spies
+
+## Mission Details
+
+### Desenho (Drawing) - 15 missions
+- Agents see the secret word and draw it
+- Spies don't know the word and must improvise
+- All players draw simultaneously
+- Drawings are displayed in the discussion phase for comparison
+
+### Ordem (Order) - 12 missions
+- 4 emojis must be arranged in a specific order
+- Agents know the criteria (e.g., "smaller to larger", "colder to hotter")
+- Spies don't know the criteria and must guess the order
+- Draggable cards with up/down arrows for mobile support
+- Orders are displayed in the discussion phase
+
+### Código Secreto (Code) - 12 missions
+- A 5-digit code must be entered
+- Agents see the full code
+- Spies see only 2 random digits (never the first) in yellow, 3 as "?" plus a hint
+- All players submit their guesses during the mission phase
+- Submissions are compared in the discussion phase
+
+### História (Story) - 10 missions
+- Agents know a famous story (e.g., "Chapeuzinho Vermelho")
+- Spies don't know the story at all
+- Turn-based: each player writes up to 400 characters
+- Spies can only see what others have written before their turn
+- Contributions are displayed sequentially in discussion phase
 
 ## Development
 
@@ -71,13 +100,16 @@ npm start
 
 ### Game Phases
 1. Role Reveal - Players see their secret role
-2. Mission - Players receive mission (Agents see secret, Spies don't)
-3. Drawing - If mission requires drawing, all players draw
-4. Story - If mission is story type, each player writes 400 chars (turn-based)
-5. Discussion - Players discuss and identify suspects
-6. Voting - Vote to eliminate someone
-7. Voting Result - See who was eliminated
-8. Game Over - Winners announced
+2. Mission - Players receive mission details (Agents see secret, Spies don't)
+3. Activity Phase - Depends on mission type:
+   - Drawing: All players draw simultaneously
+   - Order: All players arrange 4 emojis in order
+   - Code: All players submit 5-digit code guesses
+   - Story: Players write 400 chars each (turn-based)
+4. Discussion - Players discuss and identify suspects, review submissions
+5. Voting - Vote to eliminate someone
+6. Voting Result - See who was eliminated
+7. Game Over - Winners announced
 
 ### Win Conditions
 - **Agents**: Eliminate all spies
@@ -89,12 +121,25 @@ npm start
 ### Server Settings
 - Default port: 5000 (configurable via PORT env var)
 - Host: 0.0.0.0 (accepts all connections)
-- Max players per room: 12 (configurable in storage.ts)
+- Min players per room: 5
+- Max players per room: 12
 
 ### Storage
 Currently using in-memory storage (MemStorage). Rooms are lost when server restarts. For persistence, a database implementation would be needed.
 
 ## Recent Changes
+- December 1, 2024: Order Phase Implementation
+  - Created OrderPhase component with draggable emoji cards
+  - 4 emojis can be reordered via drag-and-drop or up/down arrows
+  - Agents see the correct criteria, spies must guess
+  - Order submissions displayed in DiscussionPhase
+  - Added OrderSubmission type and WebSocket handlers
+  - Order submissions reset between rounds
+
+- December 1, 2024: UI/UX Improvements
+  - Changed minimum players from 3 to 5
+  - Removed duplicate "Sair da Sala" button in lobby
+
 - December 1, 2024: Code Mission Improvements
   - Added code submission input fields in MissionPhase for all players
   - Players can now submit their code guesses during the mission phase
@@ -106,22 +151,16 @@ Currently using in-memory storage (MemStorage). Rooms are lost when server resta
 
 - December 1, 2024: Story Phase Implementation
   - Added StoryPhase component for turn-based story contributions (400 chars per player)
-  - Story missions: spies only see what others write as hints (no scrambled letters)
-  - Other missions (drawing, order, code): use scrambled letters/hints as before
-  - Spies now see "História Desconhecida" and must deduce from others' contributions
-  - Added "Sair da Sala" (Leave Room) button accessible in all game phases
+  - Story missions: spies only see what others write (no scrambled letters)
+  - Spies see "História Desconhecida" and must deduce from others' contributions
   - Story phase uses WebSocket for real-time turn synchronization
   - DiscussionPhase now shows story contributions for all players to review
-  - Fixed black screen bug in discussion phase for story missions
 
 - December 1, 2024: Mission System Overhaul
   - Restricted mission types to exactly 4: Drawing, Order, Code (5 digits), Story
-  - Updated SecretFact interface to only accept 'drawing' | 'order' | 'code' | 'story'
   - Created 15 Drawing missions, 12 Order missions, 12 Code missions, 10 Story missions
   - Updated MissionPhase.tsx with type-specific UI (colors, icons, info blocks)
-  - Fixed mission type detection to use secretFact.type instead of title
   - Added storyTitle and storyPrompt fields for Story missions
-  - Removed legacy mission types (emoji, gesture, word, ranking, explanation)
 
 - November 30, 2024: Initial Replit setup
   - Configured development workflow on port 5000
