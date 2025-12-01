@@ -1,10 +1,20 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MessageSquare, Users, ChevronRight, AlertTriangle, BookOpen, KeyRound, ArrowUpDown, Phone, Eye, Skull, HelpCircle } from 'lucide-react';
 import Timer from './Timer';
 import type { Player, Mission, DrawingData, StoryContribution, CodeSubmission, OrderSubmission, PlayerRole } from '@shared/schema';
+
+console.log('DiscussionPhase module loaded - checking imports:', {
+  Button: typeof Button,
+  Card: typeof Card,
+  Badge: typeof Badge,
+  Timer: typeof Timer,
+  MessageSquare: typeof MessageSquare,
+  Eye: typeof Eye,
+  HelpCircle: typeof HelpCircle,
+});
 
 interface DiscussionPhaseProps {
   mission: Mission;
@@ -33,18 +43,43 @@ export default function DiscussionPhase({
   isHost = true,
   playerRole,
 }: DiscussionPhaseProps) {
-  const activePlayers = players.filter(p => !p.isEliminated);
+  useEffect(() => {
+    console.log('DiscussionPhase mounted with props:', { 
+      playerRole, 
+      missionTitle: mission?.title,
+      missionType: mission?.secretFact?.type,
+      playersCount: players?.length,
+      drawingsCount: drawings?.length,
+      storyCount: storyContributions?.length,
+      codeCount: codeSubmissions?.length,
+      orderCount: orderSubmissions?.length
+    });
+  }, []);
+
+  console.log('DiscussionPhase render START:', { playerRole, missionTitle: mission?.title });
+
+  const activePlayers = players?.filter(p => !p.isEliminated) || [];
   const isAgent = playerRole === 'agent' || playerRole === 'triple';
   const isSpy = playerRole === 'spy';
   const isJester = playerRole === 'jester';
-  const doesNotKnowSecret = isSpy || isJester;
 
-  console.log('DiscussionPhase render:', { playerRole, isAgent, isSpy, isJester, missionTitle: mission?.title, playersCount: players?.length });
+  console.log('DiscussionPhase role check:', { isAgent, isSpy, isJester });
 
   const shuffledOrderForDisplay = useMemo(() => {
-    if (!mission.secretFact.rankingItems) return [];
+    if (!mission?.secretFact?.rankingItems) return [];
     return [...mission.secretFact.rankingItems].sort(() => Math.random() - 0.5);
-  }, [mission.id]);
+  }, [mission?.id]);
+
+  if (!mission || !players) {
+    console.error('DiscussionPhase: missing required props', { mission, players });
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Carregando...</p>
+      </div>
+    );
+  }
+
+  console.log('DiscussionPhase render CONTINUING - props valid');
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6">

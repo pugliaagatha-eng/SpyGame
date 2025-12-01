@@ -40,7 +40,12 @@ export default function DrawingCanvas({
   const [brushSize, setBrushSize] = useState(4);
   const [isEraser, setIsEraser] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const lastPos = useRef<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    setIsSubmitted(false);
+  }, [word, playerName]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -156,8 +161,9 @@ export default function DrawingCanvas({
 
   const handleSubmit = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || isSubmitted) return;
     onSubmit(canvas.toDataURL());
+    setIsSubmitted(true);
   };
 
   const handleTimerComplete = () => {
@@ -280,9 +286,14 @@ export default function DrawingCanvas({
               ))}
             </div>
 
-            <Button onClick={handleSubmit} data-testid="button-submit-drawing">
+            <Button 
+              onClick={handleSubmit} 
+              disabled={isSubmitted}
+              className={isSubmitted ? 'bg-green-600 hover:bg-green-600 text-white' : ''}
+              data-testid="button-submit-drawing"
+            >
               <Check className="w-4 h-4 mr-2" />
-              Enviar
+              {isSubmitted ? 'Enviado!' : 'Enviar'}
             </Button>
           </div>
         </CardContent>
