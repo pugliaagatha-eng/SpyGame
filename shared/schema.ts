@@ -212,22 +212,23 @@ export function getRandomAbility(role?: PlayerRole): Ability {
     return { ...JESTER_ABILITY, used: false };
   }
   
+  if (role === 'spy') {
+    return { ...SPY_ABILITY_SCRAMBLE, used: false };
+  }
+  
   if (role === 'agent') {
-    // 30% de chance de Escudo, 15% de Investigação Forense, 55% de outra habilidade
     const rand = Math.random();
     if (rand < 0.30) {
       return { ...ABILITIES.find(a => a.id === 'shield')!, used: false };
-    } else if (rand < 0.45) { // 0.30 + 0.15
+    } else if (rand < 0.45) {
       return { ...AGENT_RARE_ABILITY, used: false };
     }
   } else if (role === 'triple') {
-    // Agente Triplo tem 50% de chance de Escudo
     if (Math.random() < 0.5) {
       return { ...ABILITIES.find(a => a.id === 'shield')!, used: false };
     }
   }
   
-  // Para Agentes que não pegaram Escudo/Forense, e para Agente Triplo que não pegou Escudo
   const availableAbilities = ABILITIES.filter(a => a.id !== 'shield' && a.id !== 'forensic_investigation');
   return { ...availableAbilities[Math.floor(Math.random() * availableAbilities.length)], used: false };
 }

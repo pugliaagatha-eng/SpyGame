@@ -832,6 +832,7 @@ export default function SpyGame() {
             isDrawingMission={mission.secretFact.type === 'drawing'}
             onStartDrawing={handleStartMission}
             isHost={myPlayer?.isHost || false}
+            playerRole={mode === 'online' ? myPlayer?.role : currentPlayer?.role}
           />
       )}
 

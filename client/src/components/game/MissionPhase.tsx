@@ -1,8 +1,9 @@
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Target, Clock, AlertTriangle, ChevronRight, Hash, Pencil, ArrowUpDown, KeyRound, BookOpen } from 'lucide-react';
-import type { Mission } from '@shared/schema';
+import { Target, Clock, ChevronRight, Hash, Pencil, ArrowUpDown, KeyRound, BookOpen, Phone, Eye, HelpCircle, Headphones } from 'lucide-react';
+import type { Mission, PlayerRole } from '@shared/schema';
 import { MISSION_COUNTS } from '@shared/schema';
 
 interface MissionPhaseProps {
@@ -13,6 +14,7 @@ interface MissionPhaseProps {
   isDrawingMission?: boolean;
   onStartDrawing?: () => void;
   isHost: boolean;
+  playerRole?: PlayerRole;
 }
 
 export default function MissionPhase({
@@ -23,7 +25,22 @@ export default function MissionPhase({
   isDrawingMission,
   onStartDrawing,
   isHost,
+  playerRole,
 }: MissionPhaseProps) {
+  const [showPhoneCall, setShowPhoneCall] = useState(false);
+  
+  const isAgent = playerRole === 'agent' || playerRole === 'triple';
+  const isSpy = playerRole === 'spy';
+  const isStoryMission = mission.secretFact.type === 'story';
+  
+  useEffect(() => {
+    if (isAgent && !isStoryMission) {
+      setShowPhoneCall(true);
+      const timer = setTimeout(() => setShowPhoneCall(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isAgent, isStoryMission, mission.id]);
+
   const getMissionIcon = () => {
     switch (mission.secretFact.type) {
       case 'drawing': return <Pencil className="w-5 h-5" />;
@@ -46,6 +63,28 @@ export default function MissionPhase({
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6">
+      {showPhoneCall && isAgent && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center animate-in fade-in">
+          <div className="bg-cyan-900/90 p-8 rounded-2xl border-2 border-cyan-400 max-w-md mx-4 animate-in zoom-in">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <Phone className="w-8 h-8 text-cyan-400 animate-pulse" />
+              <h2 className="text-xl font-bold text-cyan-300">TELEFONEMA SECRETO</h2>
+            </div>
+            <p className="text-sm text-cyan-200/80 text-center mb-4">
+              Você está recebendo informações confidenciais da central...
+            </p>
+            <div className="p-4 rounded bg-cyan-500/30 border border-cyan-400">
+              <p className="font-mono text-center text-cyan-300 font-bold text-2xl">
+                {mission.secretFact.value}
+              </p>
+            </div>
+            <p className="text-xs text-center text-cyan-400/60 mt-4">
+              Memorize esta informação. A ligação será encerrada em breve.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center gap-2 mb-6">
         {Array.from({ length: maxRounds }).map((_, i) => (
           <div
@@ -77,6 +116,45 @@ export default function MissionPhase({
             {mission.description}
           </p>
 
+          {isAgent && !isStoryMission && (
+            <div className="p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
+              <h3 className="text-sm font-semibold text-cyan-400 mb-2 flex items-center gap-2">
+                <Phone className="w-4 h-4" />
+                Fato Secreto (Telefonema)
+              </h3>
+              <div className="p-3 rounded bg-cyan-500/20 border border-cyan-400/50">
+                <p className="font-mono text-center text-cyan-300 font-bold text-xl">
+                  {mission.secretFact.value}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {isSpy && (
+            <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30">
+              <h3 className="text-sm font-semibold text-red-400 mb-2 flex items-center gap-2">
+                <Eye className="w-4 h-4" />
+                Você é Espião
+              </h3>
+              <p className="text-red-300/80 text-sm text-center mb-3">
+                {isStoryMission 
+                  ? 'Você NÃO conhece a história desta missão.' 
+                  : 'Você NÃO conhece o fato secreto desta missão.'}
+              </p>
+              {!isStoryMission && (
+                <div className="p-3 rounded bg-red-500/20 border border-red-400/50">
+                  <h4 className="text-xs font-semibold text-red-400 mb-1 flex items-center gap-1">
+                    <Headphones className="w-3 h-3" />
+                    Habilidade: "Transcrever Ligação"
+                  </h4>
+                  <p className="text-xs text-center text-red-400/70">
+                    Use na fase de discussão para receber o fato secreto embaralhado no chat secreto dos espiões.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {mission.secretFact.type === 'order' && mission.secretFact.rankingItems && (
             <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
               <h3 className="text-sm font-semibold text-blue-400 mb-2 flex items-center gap-2">
@@ -90,9 +168,17 @@ export default function MissionPhase({
                   </span>
                 ))}
               </div>
-              <p className="text-xs text-center text-muted-foreground mt-3">
-                Critério: <span className="text-blue-300">{mission.secretFact.rankingCriteria}</span>
-              </p>
+              {isAgent && (
+                <p className="text-xs text-center text-muted-foreground mt-3">
+                  Critério: <span className="text-blue-300">{mission.secretFact.rankingCriteria}</span>
+                </p>
+              )}
+              {isSpy && (
+                <p className="text-xs text-center text-red-400/60 mt-3 flex items-center justify-center gap-1">
+                  <HelpCircle className="w-3 h-3" />
+                  Critério desconhecido - observe os agentes
+                </p>
+              )}
             </div>
           )}
 
@@ -102,9 +188,16 @@ export default function MissionPhase({
                 <BookOpen className="w-4 h-4" />
                 História: {mission.secretFact.storyTitle}
               </h3>
-              <p className="text-purple-300/80 text-sm italic">
-                "{mission.secretFact.storyPrompt}"
-              </p>
+              {isAgent && (
+                <p className="text-purple-300/80 text-sm italic mb-2">
+                  "{mission.secretFact.storyPrompt}"
+                </p>
+              )}
+              {isSpy && (
+                <p className="text-red-400/80 text-sm text-center">
+                  Você NÃO conhece a história. Improvise baseado nas contribuições dos outros!
+                </p>
+              )}
               <p className="text-xs text-center text-muted-foreground mt-3">
                 Cada jogador escreve até 200 caracteres para continuar a história
               </p>
@@ -118,15 +211,25 @@ export default function MissionPhase({
                 Código de 5 Dígitos
               </h3>
               <div className="flex justify-center gap-2 my-3">
-                {[1, 2, 3, 4, 5].map((_, i) => (
-                  <div key={i} className="w-10 h-12 rounded border-2 border-green-500/50 bg-background/50 flex items-center justify-center text-2xl font-mono text-green-400">
-                    ?
-                  </div>
-                ))}
+                {isAgent ? (
+                  mission.secretFact.value.split('').map((digit, i) => (
+                    <div key={i} className="w-10 h-12 rounded border-2 border-green-500/50 bg-green-500/20 flex items-center justify-center text-2xl font-mono text-green-400">
+                      {digit}
+                    </div>
+                  ))
+                ) : (
+                  [1, 2, 3, 4, 5].map((_, i) => (
+                    <div key={i} className="w-10 h-12 rounded border-2 border-red-500/50 bg-background/50 flex items-center justify-center text-2xl font-mono text-red-400">
+                      ?
+                    </div>
+                  ))
+                )}
               </div>
-              <p className="text-xs text-center text-muted-foreground">
-                Dica: <span className="text-green-300">{mission.secretFact.hint}</span>
-              </p>
+              {isSpy && (
+                <p className="text-xs text-center text-red-400/60">
+                  Use sua habilidade para decifrar o código
+                </p>
+              )}
             </div>
           )}
 
@@ -136,9 +239,16 @@ export default function MissionPhase({
                 <Pencil className="w-4 h-4" />
                 Desenhe
               </h3>
-              <p className="text-pink-300/80 text-center">
-                Dica: <span className="font-semibold">{mission.secretFact.hint}</span>
-              </p>
+              {isAgent && (
+                <p className="text-pink-300/80 text-center">
+                  Desenhe: <span className="font-semibold">{mission.secretFact.value}</span>
+                </p>
+              )}
+              {isSpy && (
+                <p className="text-red-400/80 text-center">
+                  Você não sabe o que desenhar. Observe os outros e improvise!
+                </p>
+              )}
             </div>
           )}
 
