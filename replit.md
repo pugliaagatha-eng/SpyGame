@@ -128,6 +128,13 @@ npm start
 Currently using in-memory storage (MemStorage). Rooms are lost when server restarts. For persistence, a database implementation would be needed.
 
 ## Recent Changes
+- December 1, 2024: Auto-Disconnect and Draw Condition
+  - Added auto-disconnect feature: players who don't reconnect within 20 seconds are removed
+  - Game ends in draw if fewer than 5 active players remain
+  - Added 'draw' winner type to schema, GameOver, and AudioSystem
+  - Added 'player_disconnected' WebSocket event with client toast notifications
+  - Draw game over shows gray-themed "Empate!" message
+
 - December 1, 2024: Jester (Tolo) Role Display Fix
   - Added proper handling for jester role across all mission phases
   - MissionPhase: Yellow-themed info box explaining jester doesn't know the secret
