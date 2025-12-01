@@ -188,7 +188,7 @@ export default function VotingPhase({
                       className={`flex items-center gap-1 ${passive ? 'opacity-70' : ''}`}
                     >
                       {Icon && <Icon className="w-3 h-3" />}
-                      {ability.name}
+                      {typeof ability.name === 'string' ? ability.name : String(ability.name)}
                       {passive && <span className="text-xs opacity-70">(auto)</span>}
                     </Badge>
                   );
@@ -259,14 +259,14 @@ export default function VotingPhase({
                 >
                   <div className="flex items-center gap-2 mb-1">
                     {Icon && <Icon className={`w-4 h-4 ${passive ? 'text-yellow-500' : 'text-primary'}`} />}
-                    <span className="font-semibold">{ability.name}</span>
+                    <span className="font-semibold">{typeof ability.name === 'string' ? ability.name : String(ability.name)}</span>
                     {passive && (
                       <Badge variant="outline" className="text-xs text-yellow-500 border-yellow-500">
                         PASSIVA
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground">{ability.description}</p>
+                  <p className="text-sm text-muted-foreground">{typeof ability.description === 'string' ? ability.description : String(ability.description)}</p>
                 </div>
               );
             })}

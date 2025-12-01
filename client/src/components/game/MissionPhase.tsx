@@ -123,7 +123,7 @@ export default function MissionPhase({
             </p>
             <div className="p-4 rounded bg-cyan-500/30 border border-cyan-400">
               <p className="font-mono text-center text-cyan-300 font-bold text-2xl">
-                {mission.secretFact.value}
+                {typeof mission.secretFact.value === 'string' ? mission.secretFact.value : String(mission.secretFact.value)}
               </p>
             </div>
             <p className="text-xs text-center text-cyan-400/60 mt-4">
@@ -358,7 +358,7 @@ export default function MissionPhase({
               </h3>
               {isAgent && (
                 <p className="text-pink-300/80 text-center">
-                  Desenhe: <span className="font-semibold">{mission.secretFact.value}</span>
+                  Desenhe: <span className="font-semibold">{typeof mission.secretFact.value === 'string' ? mission.secretFact.value : String(mission.secretFact.value)}</span>
                 </p>
               )}
               {doesNotKnowSecret && (

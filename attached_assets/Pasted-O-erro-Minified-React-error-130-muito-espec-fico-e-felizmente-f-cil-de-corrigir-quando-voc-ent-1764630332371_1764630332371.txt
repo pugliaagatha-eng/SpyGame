@@ -1,0 +1,77 @@
+O erro Minified React error #130 é muito específico e, felizmente, fácil de corrigir quando você entende o que ele significa.
+
+Basicamente, o React está dizendo: "Você está tentando renderizar um Objeto Javascript inteiro (como { chave: 'valor' }) onde eu esperava apenas um texto ou número."
+
+Como o problema acontece apenas com Espiões e na Fase de Discussão, o problema está em um dado que é diferente para os espiões em comparação aos agentes.
+
+Aqui estão os dois lugares mais prováveis onde isso está acontecendo no seu código e como consertar:
+
+1. O Suspeito Principal: A Dica na DiscussionPhase.tsx
+Em jogos de espião, frequentemente os espiões não devem ver a dica, ou recebem um dado diferente. Se o seu backend envia a dica como um objeto (ex: { hidden: true } ou { en: "Hint", pt: "Dica" }) em vez de uma string simples para o espião, o React quebra ao tentar exibi-la.
+
+Olhe este trecho no seu DiscussionPhase.tsx:
+
+TypeScript
+
+// DiscussionPhase.tsx (Linha ~48)
+<p className="text-sm text-muted-foreground">
+  Dica: <span className="text-secondary">{mission.secretFact.hint}</span>
+</p>
+Como corrigir/investigar: Proteja a renderização para garantir que é uma string.
+
+TypeScript
+
+<p className="text-sm text-muted-foreground">
+  Dica: <span className="text-secondary">
+    {/* Adicione esta verificação de segurança */}
+    {typeof mission.secretFact.hint === 'string' 
+      ? mission.secretFact.hint 
+      : 'Informação Confidencial'}
+  </span>
+</p>
+2. O Segundo Suspeito: AbilityPanel.tsx
+Como apenas os espiões costumam ter habilidades ativas, o AbilityPanel é renderizado para eles. Se o nome ou descrição da habilidade vier do banco de dados como um objeto (por exemplo, para tradução ou metadados), o app vai travar.
+
+Verifique estas linhas no AbilityPanel.tsx:
+
+TypeScript
+
+// Linha ~145
+<span className="hidden sm:inline">{ability.name}</span>
+
+// Linha ~162
+<DialogTitle ...>
+  {selectedAbility?.name}
+</DialogTitle>
+
+// Linha ~165
+<DialogDescription>
+  {selectedAbility?.description}
+</DialogDescription>
+Como corrigir: Verifique se ability.name ou ability.description não são objetos. Você pode fazer um teste rápido forçando a conversão para string para ver se o erro some:
+
+TypeScript
+
+{/* Teste de Debug: Se aparecer um JSON na tela, você achou o problema */}
+<span className="hidden sm:inline">
+  {typeof ability.name === 'object' ? JSON.stringify(ability.name) : ability.name}
+</span>
+3. Como diagnosticar com certeza
+Como o erro é "minificado" (resumido), ele não diz a linha exata. Adicione um console.log logo no início dos seus componentes para ver o que está chegando para o espião antes da tela ficar preta.
+
+Adicione isso no início do DiscussionPhase.tsx e do AbilityPanel.tsx:
+
+TypeScript
+
+// No início do componente DiscussionPhase
+console.log('Dados da Missão:', mission);
+console.log('Dica:', mission.secretFact.hint, typeof mission.secretFact.hint);
+
+// No início do componente AbilityPanel
+console.log('Habilidades:', availableAbilities);
+availableAbilities.forEach(a => {
+    console.log(`Habilidade ${a.id}:`, a.name, typeof a.name);
+});
+Abra o console (F12) antes da tela ficar preta. A última coisa que aparecer antes do erro #130 mostrará o dado "culpado" (provavelmente um object onde deveria ser string).
+
+Resumo da Solução: O erro acontece porque mission.secretFact.hint ou ability.name está chegando como um Objeto para o Espião. Envolva esses valores em verificações ou garanta que seu backend envie apenas strings (texto).

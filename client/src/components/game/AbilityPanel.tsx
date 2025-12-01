@@ -10,7 +10,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Eye, Repeat, Clock, RotateCcw, Search, Shield, Sparkles, Check, X, MinusCircle, FileSearch } from 'lucide-react';
+import { Eye, Repeat, Clock, RotateCcw, Search, Shield, Sparkles, Check, X, MinusCircle, FileSearch, Shuffle, Timer } from 'lucide-react';
 import type { Ability, Player, AbilityType } from '@shared/schema';
 
 interface AbilityPanelProps {
@@ -30,12 +30,15 @@ const ABILITY_ICONS: Record<AbilityType, typeof Eye> = {
   shield: Shield,
   negative_vote: MinusCircle,
   forensic_investigation: FileSearch,
+  scramble_fact: Shuffle,
+  force_revote_30s: Timer,
 };
 
 export default function AbilityPanel({ player, players, onUseAbility, disabled, previousRoundVotes = {} }: AbilityPanelProps) {
   const [selectedAbility, setSelectedAbility] = useState<Ability | null>(null);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   const [showResult, setShowResult] = useState<{ type: string; message: string } | null>(null);
+  const [localUsedAbilities, setLocalUsedAbilities] = useState<Set<string>>(new Set());
 
   // Early return if player is not valid
   if (!player || !player.id) {
@@ -44,7 +47,8 @@ export default function AbilityPanel({ player, players, onUseAbility, disabled, 
 
   // Safely get abilities - abilities might not be an array
   const playerAbilities = player?.abilities && Array.isArray(player.abilities) ? player.abilities : [];
-  const availableAbilities = playerAbilities.filter(a => a && !a.used);
+  // Filter out abilities that are marked as used on server OR locally
+  const availableAbilities = playerAbilities.filter(a => a && !a.used && !localUsedAbilities.has(a.id));
   const otherPlayers = players.filter(p => p && p.id !== player?.id && !p.isEliminated);
 
   const needsTarget = (ability: Ability): boolean => {
@@ -60,6 +64,9 @@ export default function AbilityPanel({ player, players, onUseAbility, disabled, 
     
     if (needsTarget(selectedAbility) && !selectedTarget) return;
 
+    // Mark ability as used locally immediately to prevent double-use
+    setLocalUsedAbilities(prev => new Set(prev).add(selectedAbility.id));
+    
     onUseAbility(selectedAbility.id, selectedTarget || undefined);
 
     if (selectedAbility.id === 'peek_role' && selectedTarget) {
@@ -139,7 +146,7 @@ export default function AbilityPanel({ player, players, onUseAbility, disabled, 
                   data-testid={`passive-ability-${ability.id}`}
                 >
                   <Icon className="w-4 h-4 text-yellow-500" />
-                  <span className="hidden sm:inline">{ability.name}</span>
+                  <span className="hidden sm:inline">{typeof ability.name === 'string' ? ability.name : String(ability.name)}</span>
                   <span className="text-xs opacity-70">(passiva)</span>
                 </div>
               );
@@ -156,7 +163,7 @@ export default function AbilityPanel({ player, players, onUseAbility, disabled, 
               >
                 <Sparkles className="w-4 h-4" />
                 <Icon className="w-4 h-4" />
-                <span className="hidden sm:inline">{ability.name}</span>
+                <span className="hidden sm:inline">{typeof ability.name === 'string' ? ability.name : String(ability.name)}</span>
               </Button>
             );
           })}
@@ -168,10 +175,10 @@ export default function AbilityPanel({ player, players, onUseAbility, disabled, 
           <DialogHeader>
             <DialogTitle className="font-serif text-xl flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-secondary" />
-              {selectedAbility?.name}
+              {typeof selectedAbility?.name === 'string' ? selectedAbility.name : String(selectedAbility?.name || '')}
             </DialogTitle>
             <DialogDescription>
-              {selectedAbility?.description}
+              {typeof selectedAbility?.description === 'string' ? selectedAbility.description : String(selectedAbility?.description || '')}
             </DialogDescription>
           </DialogHeader>
 

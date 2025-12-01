@@ -124,10 +124,10 @@ export default function RoleReveal({
               </h3>
               <div className="flex items-center gap-3">
                 <Badge variant="secondary" className="text-purple-300">
-                  {ability.name}
+                  {typeof ability.name === 'string' ? ability.name : String(ability.name)}
                 </Badge>
                 <span className="text-sm text-muted-foreground">
-                  {ability.description}
+                  {typeof ability.description === 'string' ? ability.description : String(ability.description)}
                 </span>
               </div>
             </div>

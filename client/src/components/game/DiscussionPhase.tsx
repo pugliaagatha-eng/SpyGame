@@ -76,7 +76,7 @@ export default function DiscussionPhase({
               <p className="text-sm text-muted-foreground">
                 Discutam sobre as contribuições da história
               </p>
-            ) : isAgent && mission.secretFact.hint ? (
+            ) : isAgent && mission.secretFact.hint && typeof mission.secretFact.hint === 'string' ? (
               <p className="text-sm text-muted-foreground">
                 Dica: <span className="text-secondary">{mission.secretFact.hint}</span>
               </p>
