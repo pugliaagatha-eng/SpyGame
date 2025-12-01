@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { BookOpen, Send, Users, Clock, AlertCircle } from 'lucide-react';
+import { BookOpen, Send, Users, Clock, AlertCircle, Skull } from 'lucide-react';
 import type { Mission, Player, StoryContribution } from '@shared/schema';
 
 interface StoryPhaseProps {
@@ -37,6 +37,8 @@ export default function StoryPhase({
   const isMyTurn = currentPlayerId === currentStoryPlayer?.id;
   const isAgent = playerRole === 'agent' || playerRole === 'triple';
   const isSpy = playerRole === 'spy';
+  const isJester = playerRole === 'jester';
+  const doesNotKnowSecret = isSpy || isJester;
   
   const maxChars = 400;
   const charsLeft = maxChars - text.length;
@@ -95,6 +97,13 @@ export default function StoryPhase({
               Preste atenção no que os outros escrevem e tente se encaixar!
             </p>
           )}
+
+          {isJester && (
+            <p className="text-yellow-400/80 text-sm mt-2 italic flex items-center justify-center gap-1">
+              <Skull className="w-3 h-3" />
+              Você é O Tolo - não conhece a história. Seu objetivo é ser eliminado!
+            </p>
+          )}
         </CardHeader>
         
         <CardContent className="space-y-4">
@@ -139,7 +148,7 @@ export default function StoryPhase({
               <Textarea
                 value={text}
                 onChange={(e) => setText(e.target.value.slice(0, maxChars))}
-                placeholder={isSpy 
+                placeholder={doesNotKnowSecret 
                   ? "Improvise sua contribuição baseada na história até agora..." 
                   : "Continue a história com sua contribuição..."
                 }
@@ -173,6 +182,15 @@ export default function StoryPhase({
               <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
               <span className="text-red-300/80">
                 Você não conhece a história. Leia as contribuições anteriores e improvise de forma convincente!
+              </span>
+            </div>
+          )}
+
+          {isJester && (
+            <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 flex items-start gap-2 text-sm">
+              <Skull className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+              <span className="text-yellow-300/80">
+                Você é O Tolo e não conhece a história. Improvise e tente ser eliminado!
               </span>
             </div>
           )}

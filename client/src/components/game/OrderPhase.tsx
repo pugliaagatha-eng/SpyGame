@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpDown, GripVertical, Check, Send, HelpCircle, Phone, Eye, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowUpDown, GripVertical, Check, Send, HelpCircle, Phone, Eye, ChevronUp, ChevronDown, Skull } from 'lucide-react';
 import type { Mission, PlayerRole, OrderSubmission, Player } from '@shared/schema';
 
 interface OrderPhaseProps {
@@ -35,6 +35,8 @@ export default function OrderPhase({
 
   const isAgent = playerRole === 'agent' || playerRole === 'triple';
   const isSpy = playerRole === 'spy';
+  const isJester = playerRole === 'jester';
+  const doesNotKnowSecret = isSpy || isJester;
   const rankingItems = mission.secretFact.rankingItems || [];
   const correctOrder = rankingItems;
   const rankingCriteria = mission.secretFact.rankingCriteria || '';
@@ -172,6 +174,19 @@ export default function OrderPhase({
               <p className="text-xs text-red-300/80 text-center flex items-center justify-center gap-1">
                 <HelpCircle className="w-3 h-3" />
                 Critério desconhecido - tente adivinhar a ordem!
+              </p>
+            </div>
+          )}
+
+          {isJester && (
+            <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+              <div className="flex items-center gap-2 mb-2">
+                <Skull className="w-4 h-4 text-yellow-400" />
+                <span className="text-xs font-semibold text-yellow-400">VOCÊ É O TOLO</span>
+              </div>
+              <p className="text-xs text-yellow-300/80 text-center flex items-center justify-center gap-1">
+                <HelpCircle className="w-3 h-3" />
+                Critério desconhecido - seu objetivo é ser eliminado!
               </p>
             </div>
           )}

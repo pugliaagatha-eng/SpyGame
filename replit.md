@@ -128,6 +128,14 @@ npm start
 Currently using in-memory storage (MemStorage). Rooms are lost when server restarts. For persistence, a database implementation would be needed.
 
 ## Recent Changes
+- December 1, 2024: Jester (Tolo) Role Display Fix
+  - Added proper handling for jester role across all mission phases
+  - MissionPhase: Yellow-themed info box explaining jester doesn't know the secret
+  - OrderPhase: Yellow-themed info for jester with their goal to be eliminated
+  - StoryPhase: Yellow-themed messages for jester in header and during writing
+  - Code missions: Jester now sees scrambled code display like spies
+  - All phases use "doesNotKnowSecret" flag to include jester with spies
+
 - December 1, 2024: Order Phase Implementation
   - Created OrderPhase component with draggable emoji cards
   - 4 emojis can be reordered via drag-and-drop or up/down arrows

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Target, Clock, ChevronRight, Hash, Pencil, ArrowUpDown, KeyRound, BookOpen, Phone, Eye, HelpCircle, Headphones, Check, Send } from 'lucide-react';
+import { Target, Clock, ChevronRight, Hash, Pencil, ArrowUpDown, KeyRound, BookOpen, Phone, Eye, HelpCircle, Headphones, Check, Send, Skull } from 'lucide-react';
 import type { Mission, PlayerRole, CodeSubmission } from '@shared/schema';
 import { MISSION_COUNTS } from '@shared/schema';
 
@@ -73,16 +73,18 @@ export default function MissionPhase({
   
   const isAgent = playerRole === 'agent' || playerRole === 'triple';
   const isSpy = playerRole === 'spy';
+  const isJester = playerRole === 'jester';
+  const doesNotKnowSecret = isSpy || isJester;
   const isStoryMission = mission.secretFact.type === 'story';
   
   const scrambledCodeDisplay = useMemo(() => {
-    if (mission.secretFact.type !== 'code' || !isSpy) return null;
+    if (mission.secretFact.type !== 'code' || !doesNotKnowSecret) return null;
     const code = mission.secretFact.value;
     const availableIndices = [1, 2, 3, 4];
     const shuffled = [...availableIndices].sort(() => Math.random() - 0.5);
     const revealIndices = new Set(shuffled.slice(0, 2));
     return code.split('').map((digit, i) => revealIndices.has(i) ? digit : '?');
-  }, [mission.id, mission.secretFact.type, mission.secretFact.value, isSpy]);
+  }, [mission.id, mission.secretFact.type, mission.secretFact.value, doesNotKnowSecret]);
   
   useEffect(() => {
     if (isAgent && !isStoryMission) {
@@ -206,6 +208,25 @@ export default function MissionPhase({
             </div>
           )}
 
+          {isJester && (
+            <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+              <h3 className="text-sm font-semibold text-yellow-400 mb-2 flex items-center gap-2">
+                <Skull className="w-4 h-4" />
+                Você é O Tolo
+              </h3>
+              <p className="text-yellow-300/80 text-sm text-center mb-3">
+                {isStoryMission 
+                  ? 'Você NÃO conhece a história desta missão.' 
+                  : 'Você NÃO conhece o fato secreto desta missão.'}
+              </p>
+              <div className="p-3 rounded bg-yellow-500/20 border border-yellow-400/50">
+                <p className="text-xs text-center text-yellow-400/70">
+                  Seu objetivo é ser eliminado! Aja de forma suspeita para atrair votos.
+                </p>
+              </div>
+            </div>
+          )}
+
           {mission.secretFact.type === 'order' && mission.secretFact.rankingItems && (
             <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
               <h3 className="text-sm font-semibold text-blue-400 mb-2 flex items-center gap-2">
@@ -224,8 +245,8 @@ export default function MissionPhase({
                   Critério: <span className="text-blue-300">{mission.secretFact.rankingCriteria}</span>
                 </p>
               )}
-              {isSpy && (
-                <p className="text-xs text-center text-red-400/60 mt-3 flex items-center justify-center gap-1">
+              {doesNotKnowSecret && (
+                <p className={`text-xs text-center mt-3 flex items-center justify-center gap-1 ${isJester ? 'text-yellow-400/60' : 'text-red-400/60'}`}>
                   <HelpCircle className="w-3 h-3" />
                   Critério desconhecido - observe os agentes
                 </p>
@@ -246,13 +267,13 @@ export default function MissionPhase({
                   </p>
                 </>
               )}
-              {isSpy && (
+              {doesNotKnowSecret && (
                 <>
                   <h3 className="text-sm font-semibold text-purple-400 mb-2 flex items-center gap-2">
                     <BookOpen className="w-4 h-4" />
                     História Desconhecida
                   </h3>
-                  <p className="text-amber-400/80 text-sm text-center mt-2">
+                  <p className={`text-sm text-center mt-2 ${isJester ? 'text-yellow-400/80' : 'text-amber-400/80'}`}>
                     Preste atenção no que os outros escrevem e tente se encaixar!
                   </p>
                 </>
@@ -354,8 +375,8 @@ export default function MissionPhase({
                   Desenhe: <span className="font-semibold">{mission.secretFact.value}</span>
                 </p>
               )}
-              {isSpy && (
-                <p className="text-red-400/80 text-center">
+              {doesNotKnowSecret && (
+                <p className={`text-center ${isJester ? 'text-yellow-400/80' : 'text-red-400/80'}`}>
                   Você não sabe o que desenhar. Observe os outros e improvise!
                 </p>
               )}
