@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Target, Clock, ChevronRight, Hash, Pencil, ArrowUpDown, KeyRound, BookOpen, Phone, Eye, HelpCircle, Headphones, Check, Send, Skull } from 'lucide-react';
+import { Target, Clock, ChevronRight, Hash, Pencil, ArrowUpDown, KeyRound, BookOpen, Phone, Eye, Headphones, Check, Send, Skull, Shuffle } from 'lucide-react';
 import type { Mission, PlayerRole, CodeSubmission } from '@shared/schema';
 import { MISSION_COUNTS } from '@shared/schema';
 
@@ -77,14 +77,16 @@ export default function MissionPhase({
   const doesNotKnowSecret = isSpy || isJester;
   const isStoryMission = mission.secretFact.type === 'story';
   
-  const scrambledCodeDisplay = useMemo(() => {
-    if (mission.secretFact.type !== 'code' || !doesNotKnowSecret) return null;
-    const code = mission.secretFact.value;
-    const availableIndices = [1, 2, 3, 4];
-    const shuffled = [...availableIndices].sort(() => Math.random() - 0.5);
-    const revealIndices = new Set(shuffled.slice(0, 2));
-    return code.split('').map((digit, i) => revealIndices.has(i) ? digit : '?');
-  }, [mission.id, mission.secretFact.type, mission.secretFact.value, doesNotKnowSecret]);
+  const scrambledSecretFact = useMemo(() => {
+    if (!doesNotKnowSecret) return null;
+    const text = mission.secretFact.value || '';
+    const letters = text.split('');
+    for (let i = letters.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [letters[i], letters[j]] = [letters[j], letters[i]];
+    }
+    return letters.join('');
+  }, [mission.id, mission.secretFact.value, doesNotKnowSecret]);
   
   useEffect(() => {
     if (isAgent && !isStoryMission) {
@@ -169,19 +171,6 @@ export default function MissionPhase({
             {mission.description}
           </p>
 
-          {isAgent && !isStoryMission && (
-            <div className="p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
-              <h3 className="text-sm font-semibold text-cyan-400 mb-2 flex items-center gap-2">
-                <Phone className="w-4 h-4" />
-                Fato Secreto (Telefonema)
-              </h3>
-              <div className="p-3 rounded bg-cyan-500/20 border border-cyan-400/50">
-                <p className="font-mono text-center text-cyan-300 font-bold text-xl">
-                  {mission.secretFact.value}
-                </p>
-              </div>
-            </div>
-          )}
 
           {isSpy && (
             <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30">
@@ -246,8 +235,7 @@ export default function MissionPhase({
                 </p>
               )}
               {doesNotKnowSecret && (
-                <p className={`text-xs text-center mt-3 flex items-center justify-center gap-1 ${isJester ? 'text-yellow-400/60' : 'text-red-400/60'}`}>
-                  <HelpCircle className="w-3 h-3" />
+                <p className={`text-xs text-center mt-3 ${isJester ? 'text-yellow-400/60' : 'text-red-400/60'}`}>
                   Critério desconhecido - observe os agentes
                 </p>
               )}
@@ -290,30 +278,31 @@ export default function MissionPhase({
                 <KeyRound className="w-4 h-4" />
                 Código de 5 Dígitos
               </h3>
-              <div className="flex justify-center gap-2 my-3">
-                {isAgent ? (
-                  mission.secretFact.value.split('').map((digit, i) => (
-                    <div key={i} className="w-10 h-12 rounded border-2 border-green-500/50 bg-green-500/20 flex items-center justify-center text-2xl font-mono text-green-400">
-                      {digit}
-                    </div>
-                  ))
-                ) : scrambledCodeDisplay ? (
-                  scrambledCodeDisplay.map((char, i) => (
-                    <div key={i} className={`w-10 h-12 rounded border-2 flex items-center justify-center text-2xl font-mono ${
-                      char === '?' 
-                        ? 'border-red-500/50 bg-background/50 text-red-400' 
-                        : 'border-amber-500/50 bg-amber-500/20 text-amber-400'
-                    }`}>
-                      {char}
-                    </div>
-                  ))
-                ) : null}
-              </div>
-              {mission.secretFact.hint && (
-                <div className={`mt-2 p-2 rounded ${isAgent ? 'bg-green-500/10' : 'bg-amber-500/10 border border-amber-500/30'}`}>
-                  <p className={`text-xs text-center ${isAgent ? 'text-green-400/80' : 'text-amber-400'}`}>
-                    Dica: {mission.secretFact.hint}
-                  </p>
+              {isAgent && (
+                <p className="text-sm text-center text-cyan-300/80 my-2">
+                  Você viu o código durante o telefonema. Memorize-o!
+                </p>
+              )}
+              {doesNotKnowSecret && scrambledSecretFact && (
+                <div className="my-3">
+                  <div className="p-3 rounded bg-red-500/20 border border-red-400/50">
+                    <h4 className="text-xs font-semibold text-red-400 mb-2 flex items-center justify-center gap-1">
+                      <Shuffle className="w-3 h-3" />
+                      Fato Secreto (Embaralhado)
+                    </h4>
+                    <p className="font-mono text-center text-red-300 font-bold text-lg tracking-wider">
+                      {scrambledSecretFact}
+                    </p>
+                  </div>
+                  <div className="mt-3 p-2 rounded bg-amber-500/10 border border-amber-500/30">
+                    <h4 className="text-xs font-semibold text-amber-400 mb-1 flex items-center gap-1">
+                      <Headphones className="w-3 h-3" />
+                      Habilidade: "Transcrever Ligação"
+                    </h4>
+                    <p className="text-xs text-center text-amber-400/70">
+                      Use na fase de discussão para desembaralhar o fato secreto no chat dos espiões.
+                    </p>
+                  </div>
                 </div>
               )}
               

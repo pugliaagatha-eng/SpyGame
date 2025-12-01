@@ -64,8 +64,9 @@ SpyGamePlus is a multiplayer social deduction game (minimum 5 players, maximum 1
 
 ### Código Secreto (Code) - 12 missions
 - A 5-digit code must be entered
-- Agents see the full code
-- Spies see only 2 random digits (never the first) in yellow, 3 as "?" plus a hint
+- Agents see the full code only during the animated phone call overlay (5 seconds)
+- Spies see the secret fact with letters scrambled (embaralhado) and can use "Transcrever Ligação" ability to unscramble
+- No hints are shown to spies
 - All players submit their guesses during the mission phase
 - Submissions are compared in the discussion phase
 
@@ -128,6 +129,16 @@ npm start
 Currently using in-memory storage (MemStorage). Rooms are lost when server restarts. For persistence, a database implementation would be needed.
 
 ## Recent Changes
+- December 1, 2024: Critical Bug Fixes and Code Mission Redesign
+  - Fixed React error #130 causing black screen for spies in discussion phase
+  - Removed problematic HelpCircle lucide-react import that was tree-shaken in production
+  - Removed duplicate code display: agents now ONLY see secret during phone call overlay
+  - Removed static "Fato Secreto (Telefonema)" box from MissionPhase
+  - Removed secret fact section from RoleReveal component
+  - Spies now see scrambled secret fact letters instead of partial code digits
+  - Added "Transcrever Ligação" ability hint for spies to unscramble
+  - Removed hint display for spies - they only see scrambled letters
+
 - December 1, 2024: Auto-Disconnect and Draw Condition
   - Added auto-disconnect feature: players who don't reconnect within 45 seconds are removed
   - Game ends in draw if fewer than 5 active players remain

@@ -2,41 +2,9 @@ import { useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Users, ChevronRight, AlertTriangle, BookOpen, KeyRound, ArrowUpDown, Phone, Eye, Skull, HelpCircle as HelpCircleImport } from 'lucide-react';
+import { MessageSquare, Users, ChevronRight, AlertTriangle, BookOpen, KeyRound, ArrowUpDown, Phone, Eye, Skull } from 'lucide-react';
 import Timer from './Timer';
 import type { Player, Mission, DrawingData, StoryContribution, CodeSubmission, OrderSubmission, PlayerRole } from '@shared/schema';
-
-const FallbackHelpIcon = ({ className }: { className?: string }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width="24" 
-    height="24" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <circle cx="12" cy="12" r="10"/>
-    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-    <path d="M12 17h.01"/>
-  </svg>
-);
-
-const HelpCircle = HelpCircleImport ?? FallbackHelpIcon;
-
-console.log('DiscussionPhase module loaded - checking imports:', {
-  Button: typeof Button,
-  Card: typeof Card,
-  Badge: typeof Badge,
-  Timer: typeof Timer,
-  MessageSquare: typeof MessageSquare,
-  Eye: typeof Eye,
-  HelpCircle: typeof HelpCircle,
-  HelpCircleImport: typeof HelpCircleImport,
-});
 
 interface DiscussionPhaseProps {
   mission: Mission;
@@ -65,27 +33,10 @@ export default function DiscussionPhase({
   isHost = true,
   playerRole,
 }: DiscussionPhaseProps) {
-  useEffect(() => {
-    console.log('DiscussionPhase mounted with props:', { 
-      playerRole, 
-      missionTitle: mission?.title,
-      missionType: mission?.secretFact?.type,
-      playersCount: players?.length,
-      drawingsCount: drawings?.length,
-      storyCount: storyContributions?.length,
-      codeCount: codeSubmissions?.length,
-      orderCount: orderSubmissions?.length
-    });
-  }, []);
-
-  console.log('DiscussionPhase render START:', { playerRole, missionTitle: mission?.title });
-
   const activePlayers = players?.filter(p => !p.isEliminated) || [];
   const isAgent = playerRole === 'agent' || playerRole === 'triple';
   const isSpy = playerRole === 'spy';
   const isJester = playerRole === 'jester';
-
-  console.log('DiscussionPhase role check:', { isAgent, isSpy, isJester });
 
   const shuffledOrderForDisplay = useMemo(() => {
     if (!mission?.secretFact?.rankingItems) return [];
@@ -93,40 +44,12 @@ export default function DiscussionPhase({
   }, [mission?.id]);
 
   if (!mission || !players || !mission.secretFact) {
-    console.error('DiscussionPhase: missing required props', { mission, players, secretFact: mission?.secretFact });
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-muted-foreground">Carregando...</p>
       </div>
     );
   }
-
-  console.log('DiscussionPhase render CONTINUING - props valid');
-
-  console.log('DiscussionPhase JSX elements check:', {
-    MessageSquareType: typeof MessageSquare,
-    UsersType: typeof Users,
-    ChevronRightType: typeof ChevronRight,
-    AlertTriangleType: typeof AlertTriangle,
-    BookOpenType: typeof BookOpen,
-    KeyRoundType: typeof KeyRound,
-    ArrowUpDownType: typeof ArrowUpDown,
-    PhoneType: typeof Phone,
-    EyeType: typeof Eye,
-    SkullType: typeof Skull,
-    HelpCircleType: typeof HelpCircle,
-    BadgeType: typeof Badge,
-    TimerType: typeof Timer,
-    ButtonType: typeof Button,
-    CardType: typeof Card,
-    CardContentType: typeof CardContent,
-    CardHeaderType: typeof CardHeader,
-    CardTitleType: typeof CardTitle,
-    isSpy,
-    isAgent,
-    isJester,
-    missionType: mission?.secretFact?.type,
-  });
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6">
@@ -153,7 +76,7 @@ export default function DiscussionPhase({
               <p className="text-sm text-muted-foreground">
                 Discutam sobre as contribuições da história
               </p>
-            ) : mission.secretFact.hint ? (
+            ) : isAgent && mission.secretFact.hint ? (
               <p className="text-sm text-muted-foreground">
                 Dica: <span className="text-secondary">{mission.secretFact.hint}</span>
               </p>
@@ -175,11 +98,6 @@ export default function DiscussionPhase({
                   Critério correto: <span className="font-semibold">{mission.secretFact.rankingCriteria}</span>
                 </p>
               )}
-              {mission.secretFact.type === 'code' && (
-                <p className="text-xs text-cyan-400/70 mt-2">
-                  Código correto: <span className="font-mono font-semibold">{mission.secretFact.value}</span>
-                </p>
-              )}
             </div>
           )}
 
@@ -193,18 +111,6 @@ export default function DiscussionPhase({
                 Você NÃO recebeu o telefonema secreto. Tente se passar por agente analisando as respostas dos outros. 
                 Os agentes sabiam a informação correta - tente identificar padrões nas respostas deles.
               </p>
-              {mission.secretFact.type === 'order' && (
-                <p className="text-xs text-red-400/70 mt-2 flex items-center gap-1">
-                  <HelpCircle className="w-3 h-3" />
-                  Você não sabia o critério de ordenação. Observe quais ordens são similares entre si.
-                </p>
-              )}
-              {mission.secretFact.type === 'code' && (
-                <p className="text-xs text-red-400/70 mt-2 flex items-center gap-1">
-                  <HelpCircle className="w-3 h-3" />
-                  Você só viu 2 dos 5 dígitos. Compare os palpites para deduzir o código completo.
-                </p>
-              )}
             </div>
           )}
 
