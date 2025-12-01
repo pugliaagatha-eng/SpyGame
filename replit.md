@@ -35,7 +35,11 @@ SpyGamePlus is a multiplayer social deduction game where players take on roles a
 
 ## Key Features
 - **8 Unique Abilities**: Including Shield, Swap Vote, Extra Time, Force Revote, Peek Role, Negative Vote, Forensic Investigation, and Scramble Fact
-- **150+ Missions**: Various mission types including drawing, emoji, code, gesture, word, ranking, and explanation missions
+- **4 Mission Types**: Exactly 4 types of missions:
+  - **Desenho (Drawing)**: 15 missions - players draw a secret word with a hint
+  - **Ordem (Order)**: 12 missions - drag 4 emojis in the correct order by criteria
+  - **Código Secreto (Code)**: 12 missions - enter a 5-digit secret code
+  - **História (Story)**: 10 missions - agents know a story, spies don't, each player writes 200 chars
 - **Real-time Communication**: WebSocket-based synchronization for multiplayer gameplay
 - **Voting System**: Tie detection and elimination mechanics
 - **Drawing Canvas**: Interactive canvas for drawing missions
@@ -90,6 +94,15 @@ npm start
 Currently using in-memory storage (MemStorage). Rooms are lost when server restarts. For persistence, a database implementation would be needed.
 
 ## Recent Changes
+- December 1, 2024: Mission System Overhaul
+  - Restricted mission types to exactly 4: Drawing, Order, Code (5 digits), Story
+  - Updated SecretFact interface to only accept 'drawing' | 'order' | 'code' | 'story'
+  - Created 15 Drawing missions, 12 Order missions, 12 Code missions, 10 Story missions
+  - Updated MissionPhase.tsx with type-specific UI (colors, icons, info blocks)
+  - Fixed mission type detection to use secretFact.type instead of title
+  - Added storyTitle and storyPrompt fields for Story missions
+  - Removed legacy mission types (emoji, gesture, word, ranking, explanation)
+
 - November 30, 2024: Initial Replit setup
   - Configured development workflow on port 5000
   - Set up deployment configuration for VM
