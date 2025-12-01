@@ -39,6 +39,8 @@ export default function DiscussionPhase({
   const isJester = playerRole === 'jester';
   const doesNotKnowSecret = isSpy || isJester;
 
+  console.log('DiscussionPhase render:', { playerRole, isAgent, isSpy, isJester, missionTitle: mission?.title, playersCount: players?.length });
+
   const shuffledOrderForDisplay = useMemo(() => {
     if (!mission.secretFact.rankingItems) return [];
     return [...mission.secretFact.rankingItems].sort(() => Math.random() - 0.5);
@@ -133,6 +135,14 @@ export default function DiscussionPhase({
               <p className="text-sm text-yellow-300/80">
                 Você NÃO recebeu o telefonema secreto. Seu objetivo é parecer suspeito para ser eliminado!
                 Aja de forma duvidosa mas não óbvia demais.
+              </p>
+            </div>
+          )}
+
+          {!playerRole && (
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <p className="text-sm text-muted-foreground text-center">
+                Analise as respostas dos outros jogadores e discutam quem pode ser o espião.
               </p>
             </div>
           )}
