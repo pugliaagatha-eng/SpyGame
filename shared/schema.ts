@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export type GameMode = 'online';
+export type GameMode = 'online' | 'local';
 export type PlayerRole = 'agent' | 'spy' | 'triple' | 'jester';
 export type AbilityType = 'spy_vote' | 'swap_vote' | 'extra_time' | 'force_revote' | 'peek_role' | 'shield' | 'negative_vote' | 'forensic_investigation' | 'scramble_fact' | 'force_revote_30s';
 
@@ -33,16 +33,17 @@ export interface Player {
   isHost: boolean;
   isConnected: boolean;
   isReady?: boolean;
+  disconnectTime?: number;
 }
 
 export interface SecretFact {
-  type: 'emoji' | 'code' | 'gesture' | 'word' | 'ranking' | 'explanation';
+  type: 'drawing' | 'order' | 'code' | 'story';
   value: string;
-  hint?: string; // Dica pública ampla para todos (exceto espiões, que não veem nada)
-
-  spyValue?: string; // Para missões de Explicação - valor diferente para espiões
-  rankingItems?: string[]; // Para missões de Ranking
-  rankingCriteria?: string; // Critério de ordenação
+  hint?: string;
+  rankingItems?: string[];
+  rankingCriteria?: string;
+  storyTitle?: string;
+  storyPrompt?: string;
 }
 
 export interface Mission {
@@ -51,8 +52,8 @@ export interface Mission {
   description: string;
   secretFact: SecretFact;
   duration: number;
-
-  onlineOnly?: boolean; // Se true, só aparece no modo online
+  onlineOnly?: boolean;
+  localOnly?: boolean;
 }
 
 export interface DrawingData {
@@ -67,6 +68,13 @@ export interface ChatMessage {
   playerName: string;
   message: string;
   emoji?: string;
+  timestamp: number;
+}
+
+export interface StoryContribution {
+  playerId: string;
+  playerName: string;
+  text: string;
   timestamp: number;
 }
 
@@ -91,6 +99,10 @@ export interface Room {
   messages: ChatMessage[];
   spyMessages: ChatMessage[];
   createdAt: number;
+  updatedAt?: number;
+  gameOverReason?: string;
+  storyContributions?: StoryContribution[];
+  currentStoryPlayerIndex?: number;
 }
 
 export const createRoomSchema = z.object({
@@ -109,6 +121,7 @@ export type WebSocketMessageType =
   | 'room_update'
   | 'player_joined'
   | 'player_left'
+  | 'player_kicked'
   | 'game_started'
   | 'phase_changed'
   | 'drawing_submitted'
@@ -121,6 +134,7 @@ export type WebSocketMessageType =
   | 'all_players_ready'
   | 'chat_message'
   | 'spy_chat_message'
+  | 'story_contribution'
   | 'error';
 
 export interface WebSocketMessage {
@@ -218,78 +232,76 @@ export function getRandomAbility(role?: PlayerRole): Ability {
   return { ...availableAbilities[Math.floor(Math.random() * availableAbilities.length)], used: false };
 }
 
-export type MissionCategory = 'palavra' | 'desenho' | 'gesto' | 'codigo' | 'local' | 'som' | 'historia' | 'objeto' | 'personagem' | 'acao' | 'ranking' | 'explicacao';
+export type MissionCategory = 'desenho' | 'ordem' | 'codigo' | 'historia';
 
-// Missões de Código Secreto - Agentes sabem o código de 4 dígitos
+export const DRAWING_MISSIONS: Mission[] = [
+  { id: 1001, title: 'Desenho Secreto', description: 'Desenhe algo que represente a palavra secreta. Espiões não sabem o que desenhar!', secretFact: { type: 'drawing', value: 'Casa na árvore', hint: 'Uma construção suspensa na natureza' }, duration: 90 },
+  { id: 1002, title: 'Desenho Secreto', description: 'Desenhe algo que represente a palavra secreta. Espiões não sabem o que desenhar!', secretFact: { type: 'drawing', value: 'Astronauta', hint: 'Alguém que viaja para o espaço' }, duration: 90 },
+  { id: 1003, title: 'Desenho Secreto', description: 'Desenhe algo que represente a palavra secreta. Espiões não sabem o que desenhar!', secretFact: { type: 'drawing', value: 'Pizza', hint: 'Comida italiana redonda' }, duration: 90 },
+  { id: 1004, title: 'Desenho Secreto', description: 'Desenhe algo que represente a palavra secreta. Espiões não sabem o que desenhar!', secretFact: { type: 'drawing', value: 'Dragão', hint: 'Criatura mítica que cospe fogo' }, duration: 90 },
+  { id: 1005, title: 'Desenho Secreto', description: 'Desenhe algo que represente a palavra secreta. Espiões não sabem o que desenhar!', secretFact: { type: 'drawing', value: 'Submarino', hint: 'Veículo que anda debaixo da água' }, duration: 90 },
+  { id: 1006, title: 'Desenho Secreto', description: 'Desenhe algo que represente a palavra secreta. Espiões não sabem o que desenhar!', secretFact: { type: 'drawing', value: 'Relógio de bolso', hint: 'Objeto antigo para ver as horas' }, duration: 90 },
+  { id: 1007, title: 'Desenho Secreto', description: 'Desenhe algo que represente a palavra secreta. Espiões não sabem o que desenhar!', secretFact: { type: 'drawing', value: 'Pirata', hint: 'Navegador bandido dos mares' }, duration: 90 },
+  { id: 1008, title: 'Desenho Secreto', description: 'Desenhe algo que represente a palavra secreta. Espiões não sabem o que desenhar!', secretFact: { type: 'drawing', value: 'Castelo', hint: 'Casa de reis e rainhas' }, duration: 90 },
+  { id: 1009, title: 'Desenho Secreto', description: 'Desenhe algo que represente a palavra secreta. Espiões não sabem o que desenhar!', secretFact: { type: 'drawing', value: 'Foguete', hint: 'Transporte para o espaço' }, duration: 90 },
+  { id: 1010, title: 'Desenho Secreto', description: 'Desenhe algo que represente a palavra secreta. Espiões não sabem o que desenhar!', secretFact: { type: 'drawing', value: 'Elefante', hint: 'Animal grande com tromba' }, duration: 90 },
+  { id: 1011, title: 'Desenho Secreto', description: 'Desenhe algo que represente a palavra secreta. Espiões não sabem o que desenhar!', secretFact: { type: 'drawing', value: 'Vulcão', hint: 'Montanha que expele lava' }, duration: 90 },
+  { id: 1012, title: 'Desenho Secreto', description: 'Desenhe algo que represente a palavra secreta. Espiões não sabem o que desenhar!', secretFact: { type: 'drawing', value: 'Unicórnio', hint: 'Cavalo mágico com chifre' }, duration: 90 },
+  { id: 1013, title: 'Desenho Secreto', description: 'Desenhe algo que represente a palavra secreta. Espiões não sabem o que desenhar!', secretFact: { type: 'drawing', value: 'Arco-íris', hint: 'Fenômeno colorido após a chuva' }, duration: 90 },
+  { id: 1014, title: 'Desenho Secreto', description: 'Desenhe algo que represente a palavra secreta. Espiões não sabem o que desenhar!', secretFact: { type: 'drawing', value: 'Sereia', hint: 'Criatura meio humana meio peixe' }, duration: 90 },
+  { id: 1015, title: 'Desenho Secreto', description: 'Desenhe algo que represente a palavra secreta. Espiões não sabem o que desenhar!', secretFact: { type: 'drawing', value: 'Robô', hint: 'Máquina com forma humana' }, duration: 90 },
+];
+
+export const ORDER_MISSIONS: Mission[] = [
+  { id: 2001, title: 'Ordem Secreta', description: 'Arraste os emojis na ordem correta. Agentes sabem a ordem, espiões tentam adivinhar!', secretFact: { type: 'order', value: 'Do menor ao maior', rankingItems: ['🐜', '🐈', '🐘', '🐳'], rankingCriteria: 'Tamanho (menor para maior)' }, duration: 90 },
+  { id: 2002, title: 'Ordem Secreta', description: 'Arraste os emojis na ordem correta. Agentes sabem a ordem, espiões tentam adivinhar!', secretFact: { type: 'order', value: 'Do mais frio ao mais quente', rankingItems: ['❄️', '🌧️', '☀️', '🔥'], rankingCriteria: 'Temperatura (frio para quente)' }, duration: 90 },
+  { id: 2003, title: 'Ordem Secreta', description: 'Arraste os emojis na ordem correta. Agentes sabem a ordem, espiões tentam adivinhar!', secretFact: { type: 'order', value: 'Do mais lento ao mais rápido', rankingItems: ['🐢', '🚶', '🐎', '🚀'], rankingCriteria: 'Velocidade (lento para rápido)' }, duration: 90 },
+  { id: 2004, title: 'Ordem Secreta', description: 'Arraste os emojis na ordem correta. Agentes sabem a ordem, espiões tentam adivinhar!', secretFact: { type: 'order', value: 'Do mais barato ao mais caro', rankingItems: ['🍬', '🍕', '📱', '🏠'], rankingCriteria: 'Preço (barato para caro)' }, duration: 90 },
+  { id: 2005, title: 'Ordem Secreta', description: 'Arraste os emojis na ordem correta. Agentes sabem a ordem, espiões tentam adivinhar!', secretFact: { type: 'order', value: 'Do mais leve ao mais pesado', rankingItems: ['🪶', '🍎', '🧱', '🚗'], rankingCriteria: 'Peso (leve para pesado)' }, duration: 90 },
+  { id: 2006, title: 'Ordem Secreta', description: 'Arraste os emojis na ordem correta. Agentes sabem a ordem, espiões tentam adivinhar!', secretFact: { type: 'order', value: 'Do mais baixo ao mais alto', rankingItems: ['🌱', '🏠', '🏢', '⛰️'], rankingCriteria: 'Altura (baixo para alto)' }, duration: 90 },
+  { id: 2007, title: 'Ordem Secreta', description: 'Arraste os emojis na ordem correta. Agentes sabem a ordem, espiões tentam adivinhar!', secretFact: { type: 'order', value: 'Do mais silencioso ao mais barulhento', rankingItems: ['🤫', '🗣️', '📢', '🌩️'], rankingCriteria: 'Volume (silencioso para barulhento)' }, duration: 90 },
+  { id: 2008, title: 'Ordem Secreta', description: 'Arraste os emojis na ordem correta. Agentes sabem a ordem, espiões tentam adivinhar!', secretFact: { type: 'order', value: 'Do menos doce ao mais doce', rankingItems: ['🍋', '🍎', '🍌', '🍯'], rankingCriteria: 'Doçura (menos doce para mais doce)' }, duration: 90 },
+  { id: 2009, title: 'Ordem Secreta', description: 'Arraste os emojis na ordem correta. Agentes sabem a ordem, espiões tentam adivinhar!', secretFact: { type: 'order', value: 'Do menos perigoso ao mais perigoso', rankingItems: ['🐇', '🐕', '🐺', '🦁'], rankingCriteria: 'Perigo (seguro para perigoso)' }, duration: 90 },
+  { id: 2010, title: 'Ordem Secreta', description: 'Arraste os emojis na ordem correta. Agentes sabem a ordem, espiões tentam adivinhar!', secretFact: { type: 'order', value: 'Alfabética', rankingItems: ['🍎', '🍌', '🍒', '🍇'], rankingCriteria: 'Ordem alfabética (Apple, Banana, Cherry, Grape)' }, duration: 90 },
+  { id: 2011, title: 'Ordem Secreta', description: 'Arraste os emojis na ordem correta. Agentes sabem a ordem, espiões tentam adivinhar!', secretFact: { type: 'order', value: 'Do mais antigo ao mais novo', rankingItems: ['🗿', '🏛️', '🏰', '🏙️'], rankingCriteria: 'Idade (antigo para moderno)' }, duration: 90 },
+  { id: 2012, title: 'Ordem Secreta', description: 'Arraste os emojis na ordem correta. Agentes sabem a ordem, espiões tentam adivinhar!', secretFact: { type: 'order', value: 'Do número menor ao maior', rankingItems: ['1️⃣', '3️⃣', '7️⃣', '9️⃣'], rankingCriteria: 'Ordem numérica crescente' }, duration: 90 },
+];
+
 export const CODE_MISSIONS: Mission[] = [
-  { id: 3001, title: 'Código Secreto', description: 'Agentes sabem o código de 4 dígitos. Espiões tentam adivinhar ou blefar.', secretFact: { type: 'code', value: '1984', hint: 'Ano de um livro famoso de George Orwell' }, duration: 60 },
-  { id: 3002, title: 'Código Secreto', description: 'Agentes sabem o código de 4 dígitos. Espiões tentam adivinhar ou blefar.', secretFact: { type: 'code', value: '0007', hint: 'Código de um famoso agente secreto' }, duration: 60 },
-  { id: 3003, title: 'Código Secreto', description: 'Agentes sabem o código de 4 dígitos. Espiões tentam adivinhar ou blefar.', secretFact: { type: 'code', value: '4242', hint: 'Resposta para a vida, o universo e tudo mais (em dobro)' }, duration: 60 },
-  { id: 3004, title: 'Código Secreto', description: 'Agentes sabem o código de 4 dígitos. Espiões tentam adivinhar ou blefar.', secretFact: { type: 'code', value: '2025', hint: 'O ano atual (ou próximo)' }, duration: 60 },
-  { id: 3005, title: 'Código Secreto', description: 'Agentes sabem o código de 4 dígitos. Espiões tentam adivinhar ou blefar.', secretFact: { type: 'code', value: '1024', hint: 'Um kilobyte em bytes' }, duration: 60 },
-  { id: 3006, title: 'Código Secreto', description: 'Agentes sabem o código de 4 dígitos. Espiões tentam adivinhar ou blefar.', secretFact: { type: 'code', value: '3141', hint: 'Os primeiros 4 dígitos de Pi' }, duration: 60 },
-  { id: 3007, title: 'Código Secreto', description: 'Agentes sabem o código de 4 dígitos. Espiões tentam adivinhar ou blefar.', secretFact: { type: 'code', value: '9999', hint: 'O maior número de 4 dígitos' }, duration: 60 },
-  { id: 3008, title: 'Código Secreto', description: 'Agentes sabem o código de 4 dígitos. Espiões tentam adivinhar ou blefar.', secretFact: { type: 'code', value: '1111', hint: 'Quatro uns' }, duration: 60 },
-  { id: 3009, title: 'Código Secreto', description: 'Agentes sabem o código de 4 dígitos. Espiões tentam adivinhar ou blefar.', secretFact: { type: 'code', value: '1234', hint: 'Sequência numérica simples' }, duration: 60 },
-  { id: 3010, title: 'Código Secreto', description: 'Agentes sabem o código de 4 dígitos. Espiões tentam adivinhar ou blefar.', secretFact: { type: 'code', value: '5678', hint: 'Sequência numérica simples (continuação)' }, duration: 60 },
+  { id: 3001, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '19847', hint: 'Ano do livro de Orwell + número da sorte' }, duration: 60 },
+  { id: 3002, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '00007', hint: 'Código de um famoso agente secreto' }, duration: 60 },
+  { id: 3003, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '42424', hint: 'A resposta para tudo (repetida)' }, duration: 60 },
+  { id: 3004, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '12345', hint: 'Sequência numérica simples' }, duration: 60 },
+  { id: 3005, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '31415', hint: 'Primeiros dígitos de Pi' }, duration: 60 },
+  { id: 3006, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '99999', hint: 'O maior número de 5 dígitos iguais' }, duration: 60 },
+  { id: 3007, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '11111', hint: 'Cinco números iguais (o primeiro)' }, duration: 60 },
+  { id: 3008, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '54321', hint: 'Contagem regressiva' }, duration: 60 },
+  { id: 3009, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '24680', hint: 'Números pares em sequência' }, duration: 60 },
+  { id: 3010, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '13579', hint: 'Números ímpares em sequência' }, duration: 60 },
+  { id: 3011, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '02468', hint: 'Números pares começando do zero' }, duration: 60 },
+  { id: 3012, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '86420', hint: 'Números pares decrescentes' }, duration: 60 },
 ];
 
-// Missões de Explicação - Agentes recebem palavra específica, Espiões recebem palavra parecida
-export const EXPLANATION_MISSIONS: Mission[] = [
-  { id: 1001, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Suco de maracujá', hint: 'Bebida de fruta tropical', spyValue: 'Suco de laranja' }, duration: 90 },
-  { id: 1002, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Pizza de calabresa', hint: 'Prato principal com embutido', spyValue: 'Pizza de pepperoni' }, duration: 90 },
-  { id: 1003, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Café com leite', hint: 'Bebida quente matinal', spyValue: 'Cappuccino' }, duration: 90 },
-  { id: 1004, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Bicicleta de montanha', hint: 'Veículo de duas rodas para trilhas', spyValue: 'Bicicleta de corrida' }, duration: 90 },
-  { id: 1005, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Violão acústico', hint: 'Instrumento musical de cordas', spyValue: 'Guitarra elétrica' }, duration: 90 },
-  { id: 1006, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Pão francês', hint: 'Produto de padaria crocante', spyValue: 'Pão de forma' }, duration: 90 },
-  { id: 1007, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Tênis de corrida', hint: 'Calçado esportivo para asfalto', spyValue: 'Chuteira de futebol' }, duration: 90 },
-  { id: 1008, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Cachorro pastor alemão', hint: 'Animal de estimação de guarda', spyValue: 'Cachorro labrador' }, duration: 90 },
-  { id: 1009, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Sorvete de chocolate', hint: 'Sobremesa gelada de cacau', spyValue: 'Sorvete de baunilha' }, duration: 90 },
-  { id: 1010, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Carro elétrico', hint: 'Veículo moderno sem combustão', spyValue: 'Carro híbrido' }, duration: 90 },
-  { id: 1011, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Filme de terror', hint: 'Gênero cinematográfico assustador', spyValue: 'Filme de suspense' }, duration: 90 },
-  { id: 1012, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Praia do Caribe', hint: 'Destino de viagem tropical', spyValue: 'Praia do Mediterrâneo' }, duration: 90 },
-  { id: 1013, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Hambúrguer artesanal', hint: 'Lanche feito à mão', spyValue: 'Hambúrguer fast food' }, duration: 90 },
-  { id: 1014, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Cerveja artesanal', hint: 'Bebida alcoólica especial', spyValue: 'Cerveja industrial' }, duration: 90 },
-  { id: 1015, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Smartphone Android', hint: 'Dispositivo eletrônico móvel', spyValue: 'iPhone' }, duration: 90 },
-  { id: 1016, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Yoga relaxante', hint: 'Exercício físico de alongamento', spyValue: 'Pilates' }, duration: 90 },
-  { id: 1017, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Música clássica', hint: 'Gênero musical antigo', spyValue: 'Música instrumental' }, duration: 90 },
-  { id: 1018, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Livro de ficção científica', hint: 'Tipo de literatura futurista', spyValue: 'Livro de fantasia' }, duration: 90 },
-  { id: 1019, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Sapato social', hint: 'Calçado formal de couro', spyValue: 'Mocassim' }, duration: 90 },
-  { id: 1020, title: 'Explicação', description: 'Explique o conceito que você recebeu sem ser muito específico. Espiões recebem algo parecido mas diferente!', secretFact: { type: 'explanation', value: 'Jantar romântico', hint: 'Refeição especial a dois', spyValue: 'Jantar de aniversário' }, duration: 90 },
-];
-
-// Missões de Ranking Secreto - Ordenar itens por critério secreto
-export const RANKING_MISSIONS: Mission[] = [
-  { id: 2001, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do menor ao maior', rankingItems: ['🐜', '🐈', '🐘', '🐳'], rankingCriteria: 'tamanho' }, duration: 90 },
-  { id: 2002, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais frio ao mais quente', rankingItems: ['🥶', '🇧🇷', '🇪🇬', '🌋'], rankingCriteria: 'temperatura' }, duration: 90 },
-  { id: 2003, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais antigo ao mais novo', rankingItems: ['🗿', '🏟️', '🗼', '🏙️'], rankingCriteria: 'idade' }, duration: 90 },
-  { id: 2004, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais lento ao mais rápido', rankingItems: ['🐢', '🚶', '🐎', '🐆'], rankingCriteria: 'velocidade' }, duration: 90 },
-  { id: 2005, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais barato ao mais caro', rankingItems: ['🍬', '🍕', '📱', '🚗'], rankingCriteria: 'preço' }, duration: 90 },
-  { id: 2006, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais leve ao mais pesado', rankingItems: ['🪶', '🍎', '🧱', '🚗'], rankingCriteria: 'peso' }, duration: 90 },
-  { id: 2007, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do menor ao maior população', rankingItems: ['🇻🇦', '🇵🇹', '🇧🇷', '🇨🇳'], rankingCriteria: 'população' }, duration: 90 },
-  { id: 2008, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais curto ao mais longo', rankingItems: ['⏱️', '⏳', '🕰️', '🗓️'], rankingCriteria: 'duração' }, duration: 90 },
-  { id: 2009, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do menos doce ao mais doce', rankingItems: ['🍋', '🍎', '🍌', '🍯'], rankingCriteria: 'doçura' }, duration: 90 },
-  { id: 2010, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais baixo ao mais alto', rankingItems: ['🌱', '🏠', '🏢', '⛰️'], rankingCriteria: 'altura' }, duration: 90 },
-  { id: 2011, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais silencioso ao mais barulhento', rankingItems: ['🤫', '🗣️', '📢', '🌩️'], rankingCriteria: 'volume' }, duration: 90 },
-  { id: 2012, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do menos perigoso ao mais perigoso', rankingItems: ['🐇', '🐕', '🐺', '🦁'], rankingCriteria: 'perigo' }, duration: 90 },
-  { id: 2013, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais simples ao mais complexo', rankingItems: ['🪨', '🌿', '🐒', '🧠'], rankingCriteria: 'complexidade' }, duration: 90 },
-  { id: 2014, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do mais próximo ao mais distante do Sol', rankingItems: ['🪐', '🌍', '☄️', '🌌'], rankingCriteria: 'distância do sol' }, duration: 90 },
-  { id: 2015, title: 'Ranking Secreto', description: 'Ordene os itens pelo critério secreto. Agentes sabem a ordem correta, espiões tentam adivinhar!', secretFact: { type: 'ranking', value: 'Do menos calórico ao mais calórico', rankingItems: ['🥒', '🍚', '🍫', '🥓'], rankingCriteria: 'calorias' }, duration: 90 },
+export const STORY_MISSIONS: Mission[] = [
+  { id: 4001, title: 'Conte a História', description: 'Continue a história que você conhece. Cada jogador tem 200 caracteres. Espiões não conhecem a história!', secretFact: { type: 'story', value: 'Chapeuzinho Vermelho', storyTitle: 'Chapeuzinho Vermelho', storyPrompt: 'Uma menina com capuz vermelho vai visitar a avó pela floresta, mas encontra um lobo mal-intencionado no caminho.' }, duration: 120 },
+  { id: 4002, title: 'Conte a História', description: 'Continue a história que você conhece. Cada jogador tem 200 caracteres. Espiões não conhecem a história!', secretFact: { type: 'story', value: 'Os Três Porquinhos', storyTitle: 'Os Três Porquinhos', storyPrompt: 'Três irmãos porquinhos constroem suas casas de materiais diferentes para se proteger do lobo mau.' }, duration: 120 },
+  { id: 4003, title: 'Conte a História', description: 'Continue a história que você conhece. Cada jogador tem 200 caracteres. Espiões não conhecem a história!', secretFact: { type: 'story', value: 'João e Maria', storyTitle: 'João e Maria', storyPrompt: 'Duas crianças perdidas na floresta encontram uma casa de doces pertencente a uma bruxa.' }, duration: 120 },
+  { id: 4004, title: 'Conte a História', description: 'Continue a história que você conhece. Cada jogador tem 200 caracteres. Espiões não conhecem a história!', secretFact: { type: 'story', value: 'A Bela Adormecida', storyTitle: 'A Bela Adormecida', storyPrompt: 'Uma princesa é amaldiçoada a dormir por 100 anos até ser acordada por um beijo de amor verdadeiro.' }, duration: 120 },
+  { id: 4005, title: 'Conte a História', description: 'Continue a história que você conhece. Cada jogador tem 200 caracteres. Espiões não conhecem a história!', secretFact: { type: 'story', value: 'Cinderela', storyTitle: 'Cinderela', storyPrompt: 'Uma jovem maltratada pela madrasta vai ao baile com ajuda de uma fada e perde seu sapatinho de cristal.' }, duration: 120 },
+  { id: 4006, title: 'Conte a História', description: 'Continue a história que você conhece. Cada jogador tem 200 caracteres. Espiões não conhecem a história!', secretFact: { type: 'story', value: 'A Pequena Sereia', storyTitle: 'A Pequena Sereia', storyPrompt: 'Uma sereia troca sua voz por pernas para poder viver na terra e conquistar o príncipe.' }, duration: 120 },
+  { id: 4007, title: 'Conte a História', description: 'Continue a história que você conhece. Cada jogador tem 200 caracteres. Espiões não conhecem a história!', secretFact: { type: 'story', value: 'Branca de Neve', storyTitle: 'Branca de Neve', storyPrompt: 'Uma princesa foge da madrasta má e vive com sete anões na floresta, mas é envenenada por uma maçã.' }, duration: 120 },
+  { id: 4008, title: 'Conte a História', description: 'Continue a história que você conhece. Cada jogador tem 200 caracteres. Espiões não conhecem a história!', secretFact: { type: 'story', value: 'Rapunzel', storyTitle: 'Rapunzel', storyPrompt: 'Uma menina com cabelos muito longos é presa em uma torre e usa seus cabelos para ajudar um príncipe a subir.' }, duration: 120 },
+  { id: 4009, title: 'Conte a História', description: 'Continue a história que você conhece. Cada jogador tem 200 caracteres. Espiões não conhecem a história!', secretFact: { type: 'story', value: 'O Patinho Feio', storyTitle: 'O Patinho Feio', storyPrompt: 'Um filhote de ave é rejeitado por ser diferente, mas cresce e descobre que é um belo cisne.' }, duration: 120 },
+  { id: 4010, title: 'Conte a História', description: 'Continue a história que você conhece. Cada jogador tem 200 caracteres. Espiões não conhecem a história!', secretFact: { type: 'story', value: 'Pinóquio', storyTitle: 'Pinóquio', storyPrompt: 'Um boneco de madeira criado por Gepeto ganha vida e sonha em se tornar um menino de verdade.' }, duration: 120 },
 ];
 
 export const MISSIONS: Mission[] = [
-  // PALAVRA CHAVE (30 missões)
-  { id: 1, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'MATRIX', hint: 'Um filme sobre simulação' }, duration: 90 },
-  { id: 2, title: 'Palavra Chave', description: 'Uma palavra foi escolhida. Agentes sabem a palavra. Faça referências sutis.', secretFact: { type: 'word', value: 'DRAGÃO', hint: 'Criatura mítica que cospe fogo' }, duration: 90 },
-  // ... (continua com todas as outras missões de Palavra Chave, Desenho Secreto, Gesto Secreto, Código Numérico, Local Secreto, Personagem Famoso)
-  
-  // Adiciona missões de Código Secreto, Explicação e Ranking ao final
+  ...DRAWING_MISSIONS,
+  ...ORDER_MISSIONS,
   ...CODE_MISSIONS,
-  ...EXPLANATION_MISSIONS,
-  ...RANKING_MISSIONS,
+  ...STORY_MISSIONS,
 ];
 
-// Funções auxiliares para missões por modo
 export function getMissionsForMode(mode: GameMode): Mission[] {
   return MISSIONS.filter(m => {
     if (mode === 'local' && m.onlineOnly) return false;
@@ -303,25 +315,18 @@ export function getRandomMissionForMode(mode: GameMode): Mission {
   return availableMissions[Math.floor(Math.random() * availableMissions.length)];
 }
 
-// Conta missões por tipo
 export const MISSION_COUNTS: Record<string, number> = {
-  'Palavra Chave': 30,
-  'Desenho Secreto': 20,
-  'Gesto Secreto': 15,
-  'Código Numérico': 10,
-  'Local Secreto': 15,
-  'Personagem Famoso': 10,
-  'Explicação': EXPLANATION_MISSIONS.length,
-  'Ranking Secreto': RANKING_MISSIONS.length,
+  'Desenho Secreto': DRAWING_MISSIONS.length,
+  'Ordem Secreta': ORDER_MISSIONS.length,
+  'Código Secreto': CODE_MISSIONS.length,
+  'Conte a História': STORY_MISSIONS.length,
 };
 
-// Função para pegar alternativas de missão (para 3 pistas)
 export function getMissionAlternatives(mission: Mission, count: number = 3): SecretFact[] {
   const sameTitleMissions = MISSIONS.filter(m => m.title === mission.title && m.id !== mission.id);
   const shuffled = sameTitleMissions.sort(() => Math.random() - 0.5);
   const alternatives = shuffled.slice(0, count - 1).map(m => m.secretFact);
   
-  // Inclui a missão correta e embaralha todas
   const allOptions = [mission.secretFact, ...alternatives];
   return allOptions.sort(() => Math.random() - 0.5);
 }

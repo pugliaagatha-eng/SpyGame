@@ -1,8 +1,8 @@
 import { randomUUID } from "crypto";
-import type { Room, Player, Mission, DrawingData, PlayerRole, Ability, GamePhase, SecretFact } from "@shared/schema";
+import type { Room, Player, Mission, DrawingData, PlayerRole, Ability, StoryContribution } from "@shared/schema";
 import { MISSIONS, getRandomAbility, getMissionAlternatives, shuffleString, SPY_ABILITY_SCRAMBLE, SPY_ABILITY_REVOTE } from "@shared/schema";
+import { notifyRoomUpdate } from "./websocket";
 
-// --- NOVA FUNÇÃO: Algoritmo Fisher-Yates para embaralhamento real ---
 function shuffleArray<T>(array: T[]): T[] {
   const newArray = [...array];
   for (let i = newArray.length - 1; i > 0; i--) {
@@ -47,7 +47,7 @@ export class MemStorage implements IStorage {
 
   constructor() {
     this.rooms = new Map();
-    setInterval(() => this.cleanupOldRooms(), 5000); // 5 segundos para checar desconexões
+    setInterval(() => this.cleanupOldRooms(), 30000);
   }
 
   async createRoom(hostName: string): Promise<{ room: Room; playerId: string }> {
@@ -89,6 +89,7 @@ export class MemStorage implements IStorage {
       messages: [],
       spyMessages: [],
       createdAt: Date.now(),
+      updatedAt: Date.now(),
     };
 
     this.rooms.set(roomId, room);
@@ -111,57 +112,50 @@ export class MemStorage implements IStorage {
 
   async cleanupOldRooms(): Promise<void> {
     const now = Date.now();
-    for (const [roomId, room] of this.rooms.entries()) {
+    const maxAge = 2 * 60 * 60 * 1000;
+    const entries = Array.from(this.rooms.entries());
+
+    for (const [roomId, room] of entries) {
       let roomChanged = false;
 
-      // 1. Remove jogadores desconectados após 25 segundos
       const initialPlayerCount = room.players.length;
-      room.players = room.players.filter(player => {
-        if (!player.isConnected && player.disconnectTime && now - player.disconnectTime > 25000) { // 25 segundos
+      room.players = room.players.filter((player: Player) => {
+        if (!player.isConnected && player.disconnectTime && now - player.disconnectTime > 25000) {
           roomChanged = true;
-          // Se o jogador for o host, passa a coroa
           if (room.hostId === player.id) {
-            const nextHost = room.players.find(p => p.id !== player.id);
+            const nextHost = room.players.find((p: Player) => p.id !== player.id);
             if (nextHost) {
               room.hostId = nextHost.id;
               nextHost.isHost = true;
             }
           }
-          return false; // Remove o jogador
+          return false;
         }
-        return true; // Mantém o jogador
+        return true;
       });
 
-      // 2. Verifica se o jogo deve ser encerrado após a remoção
-      const activePlayers = room.players.filter(p => p.isConnected);
-      if (room.status !== 'waiting' && activePlayers.length < 5) {
+      const activePlayers = room.players.filter((p: Player) => p.isConnected);
+      if (room.status !== 'waiting' && room.status !== 'game_over' && activePlayers.length < 3) {
         room.status = 'game_over';
         room.winner = 'spies';
-        room.gameOverReason = 'Jogo encerrado: Menos de 5 jogadores ativos.';
+        room.gameOverReason = 'Jogo encerrado: Menos de 3 jogadores ativos.';
         roomChanged = true;
       }
 
-      // 3. Remove salas vazias
-      if (room.players.length === 0) {
+      if (room.players.length === 0 || now - room.createdAt > maxAge) {
         this.rooms.delete(roomId);
         continue;
       }
 
-      // 4. Remove salas que estão vazias há mais de 1 hora
-      if (room.players.length === 0 && now - room.createdAt > 3600000) {
-        this.rooms.delete(roomId);
-        continue;
-      }
-      
-      // 5. Remove salas que não foram atualizadas há mais de 24 horas
-      if (now - room.updatedAt > 86400000) {
+      if (room.updatedAt && now - room.updatedAt > 86400000) {
         this.rooms.delete(roomId);
         continue;
       }
 
       if (roomChanged || initialPlayerCount !== room.players.length) {
+        room.updatedAt = now;
         this.rooms.set(roomId, room);
-        notifyRoomUpdate(roomId, room); // Notifica a mudança
+        notifyRoomUpdate(roomId, room);
       }
     }
   }
@@ -184,6 +178,7 @@ export class MemStorage implements IStorage {
     };
 
     room.players.push(player);
+    room.updatedAt = Date.now();
     this.rooms.set(room.id, room);
     return { room, playerId };
   }
@@ -191,26 +186,24 @@ export class MemStorage implements IStorage {
   async kickPlayer(roomId: string, hostId: string, playerIdToKick: string): Promise<Room | null> {
     const room = this.rooms.get(roomId);
     if (!room) return null;
-    if (room.hostId !== hostId) return null; // Somente o host pode expulsar
-    if (room.hostId === playerIdToKick) return null; // Host não pode se expulsar
+    if (room.hostId !== hostId) return null;
+    if (room.hostId === playerIdToKick) return null;
 
-    room.players = room.players.filter(p => p.id !== playerIdToKick);
+    room.players = room.players.filter((p: Player) => p.id !== playerIdToKick);
 
     if (room.players.length === 0) {
       this.rooms.delete(roomId);
       return null;
     }
 
-    // Se o jogo estiver em andamento e o número de jogadores ativos for menor que 5, encerra o jogo
-    const activePlayers = room.players.filter(p => p.isConnected);
-    if (room.status !== 'waiting' && activePlayers.length < 5) {
+    const activePlayers = room.players.filter((p: Player) => p.isConnected);
+    if (room.status !== 'waiting' && activePlayers.length < 3) {
       room.status = 'game_over';
-      room.winner = 'spies'; // Ou outro valor que indique encerramento por falta de jogadores
-      room.gameOverReason = 'Jogo encerrado: Menos de 5 jogadores ativos.';
-      this.rooms.set(roomId, room);
-      return room;
+      room.winner = 'spies';
+      room.gameOverReason = 'Jogo encerrado: Menos de 3 jogadores ativos.';
     }
 
+    room.updatedAt = Date.now();
     this.rooms.set(roomId, room);
     return room;
   }
@@ -219,32 +212,28 @@ export class MemStorage implements IStorage {
     const room = this.rooms.get(roomId);
     if (!room) return null;
 
-    // 1. Marca o jogador como desconectado e inicia o timeout
-    const player = room.players.find(p => p.id === playerId);
+    const player = room.players.find((p: Player) => p.id === playerId);
     if (player) {
       player.isConnected = false;
       player.disconnectTime = Date.now();
     }
 
-    // 2. Se o jogo estiver em andamento e o número de jogadores ativos for menor que 5, encerra o jogo
-    const activePlayers = room.players.filter(p => p.isConnected);
-    if (room.status !== 'waiting' && activePlayers.length < 5) {
+    const activePlayers = room.players.filter((p: Player) => p.isConnected);
+    if (room.status !== 'waiting' && room.status !== 'game_over' && activePlayers.length < 3) {
       room.status = 'game_over';
-      room.winner = 'spies'; // Ou outro valor que indique encerramento por falta de jogadores
-      room.gameOverReason = 'Jogo encerrado: Menos de 5 jogadores ativos.';
-      this.rooms.set(roomId, room);
-      return room;
+      room.winner = 'spies';
+      room.gameOverReason = 'Jogo encerrado: Menos de 3 jogadores ativos.';
     }
 
-    // 3. Se o host sair, passa a coroa
     if (room.hostId === playerId && room.players.length > 0) {
-      const nextHost = room.players.find(p => p.id !== playerId);
+      const nextHost = room.players.find((p: Player) => p.id !== playerId && p.isConnected);
       if (nextHost) {
         room.hostId = nextHost.id;
         nextHost.isHost = true;
       }
     }
 
+    room.updatedAt = Date.now();
     this.rooms.set(roomId, room);
     return room;
   }
@@ -253,7 +242,7 @@ export class MemStorage implements IStorage {
     const room = this.rooms.get(roomId);
     if (!room) return null;
 
-    const updatedRoom = { ...room, ...updates };
+    const updatedRoom = { ...room, ...updates, updatedAt: Date.now() };
     this.rooms.set(roomId, updatedRoom);
     return updatedRoom;
   }
@@ -261,24 +250,19 @@ export class MemStorage implements IStorage {
   async startGame(roomId: string): Promise<Room | null> {
     const room = this.rooms.get(roomId);
     if (!room) return null;
-    if (room.players.length < 5) return null;
+    if (room.players.length < 3) return null;
 
-    // 1. Embaralha a lista inicial de jogadores para decidir quem pega qual papel
     const shuffled = shuffleArray([...room.players]);
     
-    const numSpies = Math.max(2, Math.floor(room.players.length / 3));
+    const numSpies = Math.max(1, Math.floor(room.players.length / 3));
     
-    // Até 7 jogadores: Tolo OU Triplo (aleatório)
-    // 7+ jogadores: Tolo E Triplo
     let hasTriple = false;
     let hasJester = false;
     
     if (room.players.length >= 7) {
-      // Ambos Tolo e Agente Triplo a partir de 7 jogadores
       hasTriple = true;
       hasJester = true;
     } else if (room.players.length >= 5) {
-      // Para 5 ou 6 jogadores, escolhe aleatoriamente entre Tolo ou Triplo
       if (Math.random() < 0.5) {
         hasTriple = true;
       } else {
@@ -286,7 +270,6 @@ export class MemStorage implements IStorage {
       }
     }
 
-    // 2. Atribui os papéis (Isso cria uma lista ordenada: Espiões primeiro, etc)
     const playersWithRoles = shuffled.map((player, index) => {
       let role: PlayerRole = 'agent';
       if (index < numSpies) {
@@ -296,29 +279,24 @@ export class MemStorage implements IStorage {
       } else if (hasJester && index === numSpies + (hasTriple ? 1 : 0)) {
         role = 'jester';
       }
-            // Re-rola a habilidade baseada no papel novo
+      
       let abilities: Ability[] = [getRandomAbility(role)];
       
       if (role === 'spy') {
-        // Espiões recebem uma das duas habilidades novas
         const spyAbilities = [SPY_ABILITY_SCRAMBLE, SPY_ABILITY_REVOTE];
-        abilities = [spyAbilities[Math.floor(Math.random() * spyAbilities.length)]];
+        abilities = [{ ...spyAbilities[Math.floor(Math.random() * spyAbilities.length)], used: false }];
       }
       
       return { ...player, role, abilities, isReady: false };
     });
 
-    // 3. --- CORREÇÃO IMPORTANTE ---
-    // Embaralha a lista FINAL para que a ordem no array (e na tela) seja aleatória
-    // e não revele quem é quem (ex: evitando que os primeiros sejam sempre espiões).
     room.players = shuffleArray(playersWithRoles);
-    
     room.status = 'role_reveal';
     room.mission = getRandomMission();
-    // Agentes recebem 3 alternativas, Espiões não recebem dica pública (já removida do schema)
-    room.missionAlternatives = getMissionAlternatives(room.mission, MISSIONS.length); // Agentes recebem todas as missões possíveis
+    room.missionAlternatives = getMissionAlternatives(room.mission, MISSIONS.length);
     room.currentPlayerIndex = 0;
     room.currentRound = 1;
+    room.updatedAt = Date.now();
 
     this.rooms.set(roomId, room);
     return room;
@@ -330,11 +308,12 @@ export class MemStorage implements IStorage {
 
     room.drawings.push(drawing);
     
-    const activePlayers = room.players.filter(p => !p.isEliminated);
+    const activePlayers = room.players.filter((p: Player) => !p.isEliminated);
     if (room.drawings.length >= activePlayers.length) {
       room.status = 'discussion';
     }
 
+    room.updatedAt = Date.now();
     this.rooms.set(roomId, room);
     return room;
   }
@@ -344,46 +323,40 @@ export class MemStorage implements IStorage {
     if (!room) return null;
 
     room.votes[voterId] = targetId;
-    const player = room.players.find(p => p.id === voterId);
+    const player = room.players.find((p: Player) => p.id === voterId);
     if (player) {
       player.hasVoted = true;
       player.votedFor = targetId;
     }
 
-    const activePlayers = room.players.filter(p => !p.isEliminated);
+    const activePlayers = room.players.filter((p: Player) => !p.isEliminated);
     const votedCount = Object.keys(room.votes).length;
 
     if (votedCount >= activePlayers.length) {
-      // Save previous round votes before clearing
       room.previousRoundVotes = { ...room.votes };
       
-      // Count votes considering Jester's negative vote ability and Shield
       const voteCounts: Record<string, number> = {};
       const shieldedPlayers = new Set<string>();
       
-      // Check for shielded players
-      room.players.forEach(p => {
-        const hasActiveShield = p.abilities?.some(a => a.id === 'shield' && a.used);
+      room.players.forEach((p: Player) => {
+        const hasActiveShield = p.abilities?.some((a: Ability) => a.id === 'shield' && a.used);
         if (hasActiveShield) {
           shieldedPlayers.add(p.id);
         }
       });
       
-      Object.entries(room.votes).forEach(([voterId, targetId]) => {
-        const voter = room.players.find(p => p.id === voterId);
-        // Voto negativo do Tolo é sempre ativo (habilidade passiva)
+      Object.entries(room.votes).forEach(([vid, tid]) => {
+        const voter = room.players.find((p: Player) => p.id === vid);
         const hasNegativeVote = voter?.role === 'jester' && 
-          voter.abilities?.some(a => a.id === 'negative_vote');
+          voter.abilities?.some((a: Ability) => a.id === 'negative_vote');
         
         if (hasNegativeVote) {
-          // Jester's vote counts as -1
-          voteCounts[targetId] = (voteCounts[targetId] || 0) - 1;
+          voteCounts[tid] = (voteCounts[tid] || 0) - 1;
         } else {
-          voteCounts[targetId] = (voteCounts[targetId] || 0) + 1;
+          voteCounts[tid] = (voteCounts[tid] || 0) + 1;
         }
       });
 
-      // Find player(s) with most votes
       let maxVotes = -Infinity;
       let eliminatedId = '';
       const playersWithMaxVotes: string[] = [];
@@ -399,22 +372,19 @@ export class MemStorage implements IStorage {
         }
       });
 
-      // Only eliminate if someone has positive votes
       if (maxVotes > 0) {
-        // If there's a tie, pick randomly
         if (playersWithMaxVotes.length > 1) {
           eliminatedId = playersWithMaxVotes[Math.floor(Math.random() * playersWithMaxVotes.length)];
         }
         
-        // Check if player is shielded
         if (shieldedPlayers.has(eliminatedId)) {
-          // Player is protected, no elimination
           room.status = 'voting_result';
+          room.updatedAt = Date.now();
           this.rooms.set(roomId, room);
           return room;
         }
         
-        const eliminatedPlayer = room.players.find(p => p.id === eliminatedId);
+        const eliminatedPlayer = room.players.find((p: Player) => p.id === eliminatedId);
         if (eliminatedPlayer) {
           eliminatedPlayer.isEliminated = true;
 
@@ -422,8 +392,8 @@ export class MemStorage implements IStorage {
             room.winner = 'jester';
             room.status = 'game_over';
           } else {
-            const activeSpies = room.players.filter(p => !p.isEliminated && p.role === 'spy');
-            const activeAgents = room.players.filter(p => !p.isEliminated && (p.role === 'agent' || p.role === 'triple'));
+            const activeSpies = room.players.filter((p: Player) => !p.isEliminated && p.role === 'spy');
+            const activeAgents = room.players.filter((p: Player) => !p.isEliminated && (p.role === 'agent' || p.role === 'triple'));
 
             if (activeSpies.length === 0) {
               room.winner = 'agents';
@@ -437,11 +407,11 @@ export class MemStorage implements IStorage {
           }
         }
       } else {
-        // No one has positive votes, move to voting result without elimination
         room.status = 'voting_result';
       }
     }
 
+    room.updatedAt = Date.now();
     this.rooms.set(roomId, room);
     return room;
   }
@@ -450,21 +420,20 @@ export class MemStorage implements IStorage {
     const room = this.rooms.get(roomId);
     if (!room) return null;
 
-    const player = room.players.find(p => p.id === playerId);
+    const player = room.players.find((p: Player) => p.id === playerId);
     if (!player) return null;
 
-    const ability = player.abilities.find(a => a.id === abilityId);
-    if (!ability || ability.used) return null;
+    const ability = player.abilities.find((a: Ability) => a.id === abilityId && !a.used);
+    if (!ability) return null;
 
     ability.used = true;
-
-    let effectMessage: string | undefined;
+    let effect: string | undefined;
 
     switch (abilityId) {
       case 'scramble_fact':
         if (room.mission?.secretFact.value) {
           const scrambledFact = shuffleString(room.mission.secretFact.value);
-          const spyNames = room.players.filter(p => p.role === 'spy' || p.role === 'triple').map(p => p.name).join(', ');
+          const spyNames = room.players.filter((p: Player) => p.role === 'spy' || p.role === 'triple').map((p: Player) => p.name).join(', ');
           
           const message = {
             id: randomUUID(),
@@ -474,59 +443,29 @@ export class MemStorage implements IStorage {
             timestamp: Date.now(),
           };
           room.spyMessages.push(message);
-          effectMessage = `Fato Secreto embaralhado enviado para o chat secreto: ${scrambledFact}`;
+          effect = `scrambled_fact:${scrambledFact}`;
         }
         break;
+        
       case 'force_revote_30s':
-        // Esta habilidade só deve ser usada na fase de voting_result
         if (room.status === 'voting_result') {
-          room.status = 'voting'; // Volta para votação
-          room.votes = {}; // Limpa votos
-          room.players.forEach(p => p.hasVoted = false);
-          // Adiciona 30 segundos ao timer (lógica de timer deve ser implementada no cliente/websocket)
-          effectMessage = 'Revotação forçada com 30 segundos extras de discussão.';
+          room.status = 'voting';
+          room.votes = {};
+          room.players.forEach((p: Player) => { p.hasVoted = false; p.votedFor = undefined; });
+          effect = 'revote_forced';
         } else {
-          // Se usada fora da fase, desfaz o uso da habilidade (ou não permite)
           ability.used = false;
-          effectMessage = 'Habilidade só pode ser usada após a votação.';
         }
         break;
-      // ... (outras habilidades)
-    }
-
-    this.rooms.set(roomId, room);
-    return { room, effect: effectMessage };
-  }
-
-  async nextPhase(roomId: string): Promise<Room | null> {
-    const room = this.rooms.get(roomId);
-    if (!room) return null;
-
-    const player = room.players.find(p => p.id === playerId);
-    if (!player) return null;
-
-    const ability = player.abilities.find(a => a.id === abilityId && !a.used);
-    if (!ability) return null;
-
-    let effect: string | undefined;
-
-    // Mark ability as used
-    player.abilities = player.abilities.map(a => 
-      a.id === abilityId ? { ...a, used: true } : a
-    );
-
-    // Handle specific ability effects
-    switch (abilityId) {
+        
       case 'extra_time':
-        // Add 30 seconds - this will be handled by the client via timer_sync
         effect = 'extra_time_added';
         break;
 
       case 'force_revote':
-        // Reset all votes and voting state
         room.votes = {};
         room.currentVoterIndex = 0;
-        room.players.forEach(p => {
+        room.players.forEach((p: Player) => {
           p.hasVoted = false;
           p.votedFor = undefined;
         });
@@ -534,9 +473,8 @@ export class MemStorage implements IStorage {
         break;
 
       case 'spy_vote':
-        // Reveal target's vote (effect will be sent to client)
         if (targetId) {
-          const targetPlayer = room.players.find(p => p.id === targetId);
+          const targetPlayer = room.players.find((p: Player) => p.id === targetId);
           if (targetPlayer && targetPlayer.votedFor) {
             effect = `spy_vote:${targetPlayer.votedFor}`;
           }
@@ -544,9 +482,8 @@ export class MemStorage implements IStorage {
         break;
 
       case 'peek_role':
-        // Reveal target's role
         if (targetId) {
-          const targetPlayer = room.players.find(p => p.id === targetId);
+          const targetPlayer = room.players.find((p: Player) => p.id === targetId);
           if (targetPlayer && targetPlayer.role) {
             effect = `peek_role:${targetPlayer.role}`;
           }
@@ -554,12 +491,10 @@ export class MemStorage implements IStorage {
         break;
 
       case 'shield':
-        // Shield is handled during vote counting - mark for protection
         effect = 'shield_active';
         break;
 
       case 'swap_vote':
-        // Allow changing vote during voting phase
         if (room.status === 'voting' && player.hasVoted && targetId) {
           const oldVote = room.votes[playerId];
           room.votes[playerId] = targetId;
@@ -569,6 +504,7 @@ export class MemStorage implements IStorage {
         break;
     }
 
+    room.updatedAt = Date.now();
     this.rooms.set(roomId, room);
     return { room, effect };
   }
@@ -582,7 +518,7 @@ export class MemStorage implements IStorage {
         room.status = 'mission';
         break;
       case 'mission':
-        if (room.mission?.title === 'Desenho Secreto') {
+        if (room.mission?.secretFact.type === 'drawing') {
           room.status = 'drawing';
           room.currentDrawingPlayerIndex = 0;
         } else {
@@ -596,15 +532,15 @@ export class MemStorage implements IStorage {
         room.status = 'voting';
         room.votes = {};
         room.currentVoterIndex = 0;
-        room.players.forEach(p => {
+        room.players.forEach((p: Player) => {
           p.hasVoted = false;
           p.votedFor = undefined;
         });
         break;
       case 'voting_result':
         if (room.currentRound >= room.maxRounds) {
-          const activeSpies = room.players.filter(p => !p.isEliminated && p.role === 'spy');
-          const activeAgents = room.players.filter(p => !p.isEliminated && (p.role === 'agent' || p.role === 'triple'));
+          const activeSpies = room.players.filter((p: Player) => !p.isEliminated && p.role === 'spy');
+          const activeAgents = room.players.filter((p: Player) => !p.isEliminated && (p.role === 'agent' || p.role === 'triple'));
           room.winner = activeSpies.length >= activeAgents.length ? 'spies' : 'agents';
           room.status = 'game_over';
         } else {
@@ -613,7 +549,7 @@ export class MemStorage implements IStorage {
           room.drawings = [];
           room.votes = {};
           room.status = 'mission';
-          room.players.forEach(p => {
+          room.players.forEach((p: Player) => {
             p.hasVoted = false;
             p.votedFor = undefined;
           });
@@ -621,24 +557,13 @@ export class MemStorage implements IStorage {
         break;
     }
 
+    room.updatedAt = Date.now();
     this.rooms.set(roomId, room);
     return room;
   }
 
   async deleteRoom(roomId: string): Promise<void> {
     this.rooms.delete(roomId);
-  }
-
-  async cleanupOldRooms(): Promise<void> {
-    const now = Date.now();
-    const maxAge = 2 * 60 * 60 * 1000;
-    const entries = Array.from(this.rooms.entries());
-
-    for (const [id, room] of entries) {
-      if (now - room.createdAt > maxAge) {
-        this.rooms.delete(id);
-      }
-    }
   }
 }
 

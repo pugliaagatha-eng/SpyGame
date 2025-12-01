@@ -259,14 +259,14 @@ export default function SpyGame() {
         break;
 
       case 'chat_message':
-        if (payload) {
-          setChatMessages(prev => [...prev, payload as ChatMessage]);
+        if (message.payload) {
+          setChatMessages(prev => [...prev, message.payload as ChatMessage]);
         }
         break;
 
       case 'spy_chat_message':
-        if (payload) {
-          setSpyChatMessages(prev => [...prev, payload as ChatMessage]);
+        if (message.payload) {
+          setSpyChatMessages(prev => [...prev, message.payload as ChatMessage]);
         }
         break;
 
@@ -513,7 +513,7 @@ export default function SpyGame() {
     if (mode === 'online' && room) {
       sendMessage({ action: 'next_phase', roomId: room.id });
     } else {
-      const isDrawingMission = mission?.title === 'Desenho Secreto';
+      const isDrawingMission = mission?.secretFact.type === 'drawing';
       if (isDrawingMission) {
         setCurrentDrawingPlayerIndex(0);
         setDrawings([]);
@@ -766,7 +766,7 @@ export default function SpyGame() {
     const isHost = room ? room.hostId === myPlayerId : true;
     const myPlayerInfo = myPlayerId ? players.find(p => p.id === myPlayerId) : currentPlayer;
 
-  const isDrawingMission = mission?.title === 'Desenho Secreto';
+  const isDrawingMission = mission?.secretFact.type === 'drawing';
   // In online mode, show abilities for the player during discussion/voting
   // In local mode, only show abilities for the current voter during voting phase
   const abilityPlayer = mode === 'online' ? myPlayer : currentVoter;
@@ -829,7 +829,7 @@ export default function SpyGame() {
             currentRound={currentRound}
             maxRounds={maxRounds}
             onStartDiscussion={handleStartMission}
-            isDrawingMission={mission.title === 'Desenho Secreto'}
+            isDrawingMission={mission.secretFact.type === 'drawing'}
             onStartDrawing={handleStartMission}
             isHost={myPlayer?.isHost || false}
           />
