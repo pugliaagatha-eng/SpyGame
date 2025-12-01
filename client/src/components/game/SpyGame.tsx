@@ -914,6 +914,7 @@ export default function SpyGame() {
           mission={mission}
           players={players}
           drawings={drawings}
+          storyContributions={storyContributions}
           duration={90}
           onStartVoting={handleStartVoting}
           isOnlineMode={mode === 'online'}

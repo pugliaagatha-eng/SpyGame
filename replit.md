@@ -97,11 +97,13 @@ Currently using in-memory storage (MemStorage). Rooms are lost when server resta
 ## Recent Changes
 - December 1, 2024: Story Phase Implementation
   - Added StoryPhase component for turn-based story contributions (400 chars per player)
-  - Implemented spyHint field showing SCRAMBLED LETTERS of story title (e.g., "OHZIPUCENHA LEEHRMOV" for "Chapeuzinho Vermelho")
-  - Spies now see "História Desconhecida" with scrambled letters hint instead of actual title
+  - Story missions: spies only see what others write as hints (no scrambled letters)
+  - Other missions (drawing, order, code): use scrambled letters/hints as before
+  - Spies now see "História Desconhecida" and must deduce from others' contributions
   - Added "Sair da Sala" (Leave Room) button accessible in all game phases
   - Story phase uses WebSocket for real-time turn synchronization
-  - Server handles story_contribution messages and broadcasts story_turn_update
+  - DiscussionPhase now shows story contributions for all players to review
+  - Fixed black screen bug in discussion phase for story missions
 
 - December 1, 2024: Mission System Overhaul
   - Restricted mission types to exactly 4: Drawing, Order, Code (5 digits), Story

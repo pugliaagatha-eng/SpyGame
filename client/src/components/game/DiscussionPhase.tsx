@@ -1,14 +1,15 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Users, ChevronRight, AlertTriangle } from 'lucide-react';
+import { MessageSquare, Users, ChevronRight, AlertTriangle, BookOpen } from 'lucide-react';
 import Timer from './Timer';
-import type { Player, Mission, DrawingData } from '@shared/schema';
+import type { Player, Mission, DrawingData, StoryContribution } from '@shared/schema';
 
 interface DiscussionPhaseProps {
   mission: Mission;
   players: Player[];
   drawings: DrawingData[];
+  storyContributions?: StoryContribution[];
   duration: number;
   onStartVoting: () => void;
   isOnlineMode?: boolean;
@@ -19,6 +20,7 @@ export default function DiscussionPhase({
   mission,
   players,
   drawings,
+  storyContributions = [],
   duration,
   onStartVoting,
   isOnlineMode = false,
@@ -47,9 +49,15 @@ export default function DiscussionPhase({
             <h3 className="text-sm font-semibold text-muted-foreground mb-2">
               Missão: {mission.title}
             </h3>
-            <p className="text-sm text-muted-foreground">
-              Dica: <span className="text-secondary">{mission.secretFact.hint}</span>
-            </p>
+            {mission.secretFact.type === 'story' ? (
+              <p className="text-sm text-muted-foreground">
+                Discutam sobre as contribuições da história
+              </p>
+            ) : mission.secretFact.hint ? (
+              <p className="text-sm text-muted-foreground">
+                Dica: <span className="text-secondary">{mission.secretFact.hint}</span>
+              </p>
+            ) : null}
           </div>
 
           {drawings.length > 0 && (
@@ -75,6 +83,25 @@ export default function DiscussionPhase({
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {storyContributions.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <BookOpen className="w-4 h-4" />
+                Contribuições da História
+              </h3>
+              <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/30 max-h-64 overflow-y-auto">
+                <div className="space-y-3">
+                  {storyContributions.map((contribution, index) => (
+                    <div key={index} className="border-b border-purple-500/20 pb-3 last:border-0 last:pb-0">
+                      <p className="text-xs text-purple-400 font-semibold mb-1">{contribution.playerName}:</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{contribution.text}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

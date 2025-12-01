@@ -90,13 +90,10 @@ export default function StoryPhase({
             </p>
           )}
           
-          {isSpy && mission.secretFact.spyHint && (
-            <div className="mt-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-              <p className="text-amber-400 text-xs uppercase tracking-wider mb-1">Letras Embaralhadas:</p>
-              <p className="text-amber-300 text-lg font-mono tracking-widest">
-                {mission.secretFact.spyHint}
-              </p>
-            </div>
+          {isSpy && (
+            <p className="text-amber-400/80 text-sm mt-2 italic">
+              Preste atenção no que os outros escrevem e tente se encaixar!
+            </p>
           )}
         </CardHeader>
         
