@@ -112,7 +112,7 @@ export interface Room {
   currentPlayerIndex: number;
   currentVoterIndex: number;
   currentDrawingPlayerIndex: number;
-  winner: 'agents' | 'spies' | 'jester' | null;
+  winner: 'agents' | 'spies' | 'jester' | 'draw' | null;
   messages: ChatMessage[];
   spyMessages: ChatMessage[];
   createdAt: number;
@@ -141,6 +141,7 @@ export type WebSocketMessageType =
   | 'player_joined'
   | 'player_left'
   | 'player_kicked'
+  | 'player_disconnected'
   | 'game_started'
   | 'phase_changed'
   | 'drawing_submitted'

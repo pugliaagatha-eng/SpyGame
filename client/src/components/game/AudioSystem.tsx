@@ -7,7 +7,7 @@ import winSound from '@assets/you-win-sequence-2-183949_1764217080506.mp3';
 interface AudioContextType {
   isMuted: boolean;
   toggleMute: () => void;
-  playWinSound: (winner: 'agents' | 'spies' | 'jester') => void;
+  playWinSound: (winner: 'agents' | 'spies' | 'jester' | 'draw') => void;
 }
 
 const AudioContext = createContext<AudioContextType | null>(null);
@@ -92,7 +92,7 @@ export function AudioProvider({ children }: AudioProviderProps) {
     setIsMuted(prev => !prev);
   }, []);
 
-  const playWinSound = useCallback((winner: 'agents' | 'spies' | 'jester') => {
+  const playWinSound = useCallback((winner: 'agents' | 'spies' | 'jester' | 'draw') => {
     if (winSoundRef.current && !isMuted) {
       winSoundRef.current.currentTime = 0;
       winSoundRef.current.play().catch(() => {});

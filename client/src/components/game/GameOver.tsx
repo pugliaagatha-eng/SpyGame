@@ -7,7 +7,7 @@ import type { Player } from '@shared/schema';
 import { ROLE_INFO } from '@shared/schema';
 
 interface GameOverProps {
-  winner: 'agents' | 'spies' | 'jester';
+  winner: 'agents' | 'spies' | 'jester' | 'draw';
   players: Player[];
   onPlayAgain: () => void;
   onBackToMenu: () => void;
@@ -47,6 +47,14 @@ export default function GameOver({ winner, players, onPlayAgain, onBackToMenu }:
           color: 'text-yellow-500',
           bgColor: 'from-yellow-500/20 to-yellow-900/20',
         };
+      case 'draw':
+        return {
+          title: 'Empate!',
+          description: 'Jogo encerrado por falta de jogadores.',
+          icon: Users,
+          color: 'text-gray-400',
+          bgColor: 'from-gray-500/20 to-gray-900/20',
+        };
     }
   };
 
@@ -57,6 +65,7 @@ export default function GameOver({ winner, players, onPlayAgain, onBackToMenu }:
     if (winner === 'agents') return p.role === 'agent' || p.role === 'triple';
     if (winner === 'spies') return p.role === 'spy';
     if (winner === 'jester') return p.role === 'jester';
+    if (winner === 'draw') return false;
     return false;
   });
 

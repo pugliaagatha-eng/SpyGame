@@ -66,7 +66,7 @@ export default function SpyGame() {
   const [drawings, setDrawings] = useState<DrawingData[]>([]);
   const [votes, setVotes] = useState<Record<string, string>>({});
   const [previousRoundVotes, setPreviousRoundVotes] = useState<Record<string, string>>({});
-  const [winner, setWinner] = useState<'agents' | 'spies' | 'jester' | null>(null);
+  const [winner, setWinner] = useState<'agents' | 'spies' | 'jester' | 'draw' | null>(null);
   const [currentDrawingPlayerIndex, setCurrentDrawingPlayerIndex] = useState(0);
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
@@ -194,31 +194,57 @@ export default function SpyGame() {
     switch (message.type) {
       case 'room_update':
       case 'player_joined':
-              case 'player_left':
-              case 'player_kicked':
-                if (payload && 'id' in payload) {
-                  setRoom(payload);
-                  setPlayers(payload.players);
-                  
-                  if (payload.storyContributions) {
-                    setStoryContributions(payload.storyContributions);
-                  }
-                  if (payload.codeSubmissions) {
-                    setCodeSubmissions(payload.codeSubmissions);
-                  }
-                  if (payload.orderSubmissions) {
-                    setOrderSubmissions(payload.orderSubmissions);
-                  }
-                  
-                  if (message.type === 'player_kicked' && payload.players.every(p => p.id !== myPlayerId)) {
-                    toast({ title: 'Você foi expulso!', description: 'O host removeu você da sala.', variant: 'destructive' });
-                    setRoom(null);
-                    setMyPlayerId(null);
-                    setPhase('splash');
-                    localStorage.removeItem('spy-game-session');
-                  }
-                }
-                break;
+      case 'player_left':
+      case 'player_kicked':
+        if (payload && 'id' in payload) {
+          setRoom(payload);
+          setPlayers(payload.players);
+          
+          if (payload.storyContributions) {
+            setStoryContributions(payload.storyContributions);
+          }
+          if (payload.codeSubmissions) {
+            setCodeSubmissions(payload.codeSubmissions);
+          }
+          if (payload.orderSubmissions) {
+            setOrderSubmissions(payload.orderSubmissions);
+          }
+          
+          if (message.type === 'player_kicked' && payload.players.every(p => p.id !== myPlayerId)) {
+            toast({ title: 'Você foi expulso!', description: 'O host removeu você da sala.', variant: 'destructive' });
+            setRoom(null);
+            setMyPlayerId(null);
+            setPhase('splash');
+            localStorage.removeItem('spy-game-session');
+          }
+        }
+        break;
+
+      case 'player_disconnected':
+        {
+          const disconnectPayload = message.payload as { room: Room; playerId: string; playerName: string; message: string };
+          if (disconnectPayload && disconnectPayload.room) {
+            setRoom(disconnectPayload.room);
+            setPlayers(disconnectPayload.room.players);
+            
+            if (disconnectPayload.room.storyContributions) {
+              setStoryContributions(disconnectPayload.room.storyContributions);
+            }
+            if (disconnectPayload.room.codeSubmissions) {
+              setCodeSubmissions(disconnectPayload.room.codeSubmissions);
+            }
+            if (disconnectPayload.room.orderSubmissions) {
+              setOrderSubmissions(disconnectPayload.room.orderSubmissions);
+            }
+            
+            toast({
+              title: 'Jogador removido',
+              description: disconnectPayload.message,
+              variant: 'destructive',
+            });
+          }
+        }
+        break;
 
       case 'game_started':
         if (payload && 'id' in payload) {

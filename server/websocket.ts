@@ -14,6 +14,10 @@ interface RoomClients {
 }
 
 const roomClients: RoomClients = {};
+const disconnectTimeouts: Map<string, NodeJS.Timeout> = new Map();
+
+const DISCONNECT_TIMEOUT_MS = 20000; // 20 seconds
+const MIN_PLAYERS = 5;
 
 export function setupWebSocket(server: Server): WebSocketServer {
   const wss = new WebSocketServer({ server, path: '/ws' });
@@ -266,6 +270,12 @@ async function handleJoinRoom(ws: ExtendedWebSocket, payload: { roomId: string; 
     if (player) {
       player.isConnected = true;
       await storage.updateRoom(roomId, { players: room.players });
+      
+      const timeoutKey = `${roomId}:${playerId}`;
+      if (disconnectTimeouts.has(timeoutKey)) {
+        clearTimeout(disconnectTimeouts.get(timeoutKey)!);
+        disconnectTimeouts.delete(timeoutKey);
+      }
     }
     sendToClient(ws, { type: 'room_update', payload: room });
     broadcastToRoom(roomId, { type: 'player_joined', payload: room }, ws);
@@ -284,16 +294,71 @@ async function handleLeaveRoom(ws: ExtendedWebSocket) {
 
 async function handleDisconnect(ws: ExtendedWebSocket) {
   if (ws.roomId && ws.playerId) {
-    const room = await storage.getRoom(ws.roomId);
+    const roomId = ws.roomId;
+    const playerId = ws.playerId;
+    const room = await storage.getRoom(roomId);
+    
     if (room) {
-      const player = room.players.find(p => p.id === ws.playerId);
+      const player = room.players.find(p => p.id === playerId);
       if (player) {
         player.isConnected = false;
-        await storage.updateRoom(ws.roomId, { players: room.players });
-        broadcastToRoom(ws.roomId, { type: 'room_update', payload: room });
+        await storage.updateRoom(roomId, { players: room.players });
+        broadcastToRoom(roomId, { type: 'room_update', payload: room });
+        
+        if (room.status !== 'waiting' && room.status !== 'game_over') {
+          const timeoutKey = `${roomId}:${playerId}`;
+          
+          if (disconnectTimeouts.has(timeoutKey)) {
+            clearTimeout(disconnectTimeouts.get(timeoutKey)!);
+          }
+          
+          const timeout = setTimeout(async () => {
+            await handlePlayerTimeout(roomId, playerId);
+            disconnectTimeouts.delete(timeoutKey);
+          }, DISCONNECT_TIMEOUT_MS);
+          
+          disconnectTimeouts.set(timeoutKey, timeout);
+        }
       }
     }
     removeFromRoom(ws);
+  }
+}
+
+async function handlePlayerTimeout(roomId: string, playerId: string) {
+  const room = await storage.getRoom(roomId);
+  if (!room || room.status === 'waiting' || room.status === 'game_over') return;
+  
+  const player = room.players.find(p => p.id === playerId);
+  if (!player || player.isConnected) return;
+  
+  player.isEliminated = true;
+  await storage.updateRoom(roomId, { players: room.players });
+  
+  broadcastToRoom(roomId, { 
+    type: 'player_disconnected', 
+    payload: { 
+      room, 
+      playerId, 
+      playerName: player.name,
+      message: `${player.name} foi removido por inatividade` 
+    } 
+  });
+  
+  const activePlayers = room.players.filter(p => !p.isEliminated && p.isConnected);
+  
+  if (activePlayers.length < MIN_PLAYERS) {
+    room.status = 'game_over';
+    room.winner = 'draw';
+    await storage.updateRoom(roomId, { status: 'game_over', winner: 'draw' });
+    broadcastToRoom(roomId, { 
+      type: 'game_over', 
+      payload: { 
+        ...room, 
+        endReason: 'insufficient_players',
+        message: 'Jogo encerrado por falta de jogadores (mínimo 5)' 
+      } 
+    });
   }
 }
 
