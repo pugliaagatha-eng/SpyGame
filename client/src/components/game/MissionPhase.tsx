@@ -202,12 +202,15 @@ export default function MissionPhase({
                     História Desconhecida
                   </h3>
                   {mission.secretFact.spyHint && (
-                    <p className="text-amber-400/80 text-sm text-center mb-2 italic">
-                      Pista: "{mission.secretFact.spyHint}"
-                    </p>
+                    <div className="mt-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                      <p className="text-amber-400 text-xs uppercase tracking-wider mb-1">Letras Embaralhadas:</p>
+                      <p className="text-amber-300 text-lg font-mono tracking-widest text-center">
+                        {mission.secretFact.spyHint}
+                      </p>
+                    </div>
                   )}
-                  <p className="text-red-400/80 text-sm text-center">
-                    Improvise baseado nas contribuições dos outros jogadores!
+                  <p className="text-red-400/80 text-sm text-center mt-2">
+                    Tente descobrir o título e improvise!
                   </p>
                 </>
               )}
