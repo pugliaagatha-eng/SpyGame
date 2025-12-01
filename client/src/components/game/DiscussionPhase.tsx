@@ -2,9 +2,30 @@ import { useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Users, ChevronRight, AlertTriangle, BookOpen, KeyRound, ArrowUpDown, Phone, Eye, Skull, HelpCircle } from 'lucide-react';
+import { MessageSquare, Users, ChevronRight, AlertTriangle, BookOpen, KeyRound, ArrowUpDown, Phone, Eye, Skull, HelpCircle as HelpCircleImport } from 'lucide-react';
 import Timer from './Timer';
 import type { Player, Mission, DrawingData, StoryContribution, CodeSubmission, OrderSubmission, PlayerRole } from '@shared/schema';
+
+const FallbackHelpIcon = ({ className }: { className?: string }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width="24" 
+    height="24" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <circle cx="12" cy="12" r="10"/>
+    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+    <path d="M12 17h.01"/>
+  </svg>
+);
+
+const HelpCircle = HelpCircleImport ?? FallbackHelpIcon;
 
 console.log('DiscussionPhase module loaded - checking imports:', {
   Button: typeof Button,
@@ -14,6 +35,7 @@ console.log('DiscussionPhase module loaded - checking imports:', {
   MessageSquare: typeof MessageSquare,
   Eye: typeof Eye,
   HelpCircle: typeof HelpCircle,
+  HelpCircleImport: typeof HelpCircleImport,
 });
 
 interface DiscussionPhaseProps {
@@ -70,8 +92,8 @@ export default function DiscussionPhase({
     return [...mission.secretFact.rankingItems].sort(() => Math.random() - 0.5);
   }, [mission?.id]);
 
-  if (!mission || !players) {
-    console.error('DiscussionPhase: missing required props', { mission, players });
+  if (!mission || !players || !mission.secretFact) {
+    console.error('DiscussionPhase: missing required props', { mission, players, secretFact: mission?.secretFact });
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-muted-foreground">Carregando...</p>

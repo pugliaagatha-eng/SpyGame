@@ -1,0 +1,35 @@
+DiscussionPhase module loaded - checking imports: Object
+index-C_f6OOnL.js:368 WebSocket connected
+index-C_f6OOnL.js:366 DiscussionPhase render START: Object
+index-C_f6OOnL.js:366 DiscussionPhase role check: Object
+index-C_f6OOnL.js:366 DiscussionPhase render CONTINUING - props valid
+index-C_f6OOnL.js:366 DiscussionPhase JSX elements check: Object
+index-C_f6OOnL.js:366 DiscussionPhase render START: Object
+index-C_f6OOnL.js:366 DiscussionPhase role check: Object
+index-C_f6OOnL.js:366 DiscussionPhase render CONTINUING - props valid
+index-C_f6OOnL.js:366 DiscussionPhase JSX elements check: Object
+index-C_f6OOnL.js:40 Error: Minified React error #130; visit https://reactjs.org/docs/error-decoder.html?invariant=130&args[]=undefined&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at $a (index-C_f6OOnL.js:40:49311)
+    at m (index-C_f6OOnL.js:38:7878)
+    at w (index-C_f6OOnL.js:38:9255)
+    at b (index-C_f6OOnL.js:38:11331)
+    at mt (index-C_f6OOnL.js:40:1475)
+    at Ev (index-C_f6OOnL.js:40:45668)
+    at Cv (index-C_f6OOnL.js:40:39727)
+    at Mb (index-C_f6OOnL.js:40:39655)
+    at ml (index-C_f6OOnL.js:40:39508)
+    at Gu (index-C_f6OOnL.js:40:35875)
+Fu @ index-C_f6OOnL.js:40
+index-C_f6OOnL.js:40 Uncaught Error: Minified React error #130; visit https://reactjs.org/docs/error-decoder.html?invariant=130&args[]=undefined&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at $a (index-C_f6OOnL.js:40:49311)
+    at m (index-C_f6OOnL.js:38:7878)
+    at w (index-C_f6OOnL.js:38:9255)
+    at b (index-C_f6OOnL.js:38:11331)
+    at mt (index-C_f6OOnL.js:40:1475)
+    at Ev (index-C_f6OOnL.js:40:45668)
+    at Cv (index-C_f6OOnL.js:40:39727)
+    at Mb (index-C_f6OOnL.js:40:39655)
+    at ml (index-C_f6OOnL.js:40:39508)
+    at Gu (index-C_f6OOnL.js:40:35875)
+index-C_f6OOnL.js:368 WebSocket disconnected
+index-C_f6OOnL.js:368 WebSocket connected

@@ -1049,7 +1049,7 @@ export default function SpyGame() {
         />
       )}
 
-      {phase === 'discussion' && mission && (
+      {phase === 'discussion' && mission && myPlayer && (
         <DiscussionPhase
           mission={mission}
           players={players}
@@ -1061,7 +1061,7 @@ export default function SpyGame() {
           onStartVoting={handleStartVoting}
           isOnlineMode={mode === 'online'}
           isHost={isHost}
-          playerRole={myPlayer?.role}
+          playerRole={myPlayer.role}
         />
       )}
 

@@ -16,7 +16,7 @@ interface RoomClients {
 const roomClients: RoomClients = {};
 const disconnectTimeouts: Map<string, NodeJS.Timeout> = new Map();
 
-const DISCONNECT_TIMEOUT_MS = 20000; // 20 seconds
+const DISCONNECT_TIMEOUT_MS = 45000; // 45 seconds
 const MIN_PLAYERS = 5;
 
 export function setupWebSocket(server: Server): WebSocketServer {

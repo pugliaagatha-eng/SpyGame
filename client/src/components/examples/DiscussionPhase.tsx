@@ -5,7 +5,7 @@ const mockMission: Mission = {
   id: 1,
   title: 'Desenho Secreto',
   description: 'Desenhe algo relacionado ao tema secreto.',
-  secretFact: { type: 'word', value: 'HACKER', hint: 'Alguém que invade sistemas' },
+  secretFact: { type: 'drawing', value: 'HACKER', hint: 'Alguém que invade sistemas' },
   duration: 60,
 };
 
