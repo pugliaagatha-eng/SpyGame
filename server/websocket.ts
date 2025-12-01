@@ -116,9 +116,68 @@ async function handleMessage(ws: ExtendedWebSocket, message: WebSocketMessage & 
       await handleSpyChatMessage(ws.roomId!, payload as { playerId: string; playerName: string; message: string; emoji?: string });
       break;
 
+    case 'submit_story_contribution':
+      await handleStoryContribution(ws.roomId!, payload as { playerId: string; playerName: string; text: string });
+      break;
+
     case 'ping':
       sendToClient(ws, { type: 'room_update', payload: { pong: true } });
       break;
+  }
+}
+
+async function handleStoryContribution(roomId: string, payload: { playerId: string; playerName: string; text: string }) {
+  const room = await storage.getRoom(roomId);
+  if (!room) return;
+  
+  const activePlayers = room.players.filter(p => !p.isEliminated);
+  const currentIndex = room.currentStoryPlayerIndex || 0;
+  const currentPlayer = activePlayers[currentIndex];
+  
+  if (!currentPlayer || currentPlayer.id !== payload.playerId) {
+    return;
+  }
+  
+  const contribution: ChatMessage = {
+    id: Math.random().toString(36).substring(2, 9),
+    playerId: payload.playerId,
+    playerName: payload.playerName,
+    message: payload.text,
+    timestamp: Date.now(),
+  };
+  
+  const storyContributions = room.storyContributions || [];
+  storyContributions.push({
+    playerId: payload.playerId,
+    playerName: payload.playerName,
+    text: payload.text,
+    timestamp: Date.now(),
+  });
+  
+  const newIndex = currentIndex + 1;
+  
+  if (newIndex >= activePlayers.length) {
+    room.status = 'discussion';
+    room.currentStoryPlayerIndex = 0;
+    await storage.updateRoom(roomId, { 
+      storyContributions,
+      currentStoryPlayerIndex: 0,
+      status: 'discussion'
+    });
+    broadcastToRoom(roomId, { type: 'phase_changed', payload: { ...room, storyContributions, status: 'discussion' } });
+  } else {
+    await storage.updateRoom(roomId, { 
+      storyContributions,
+      currentStoryPlayerIndex: newIndex
+    });
+    broadcastToRoom(roomId, { 
+      type: 'story_turn_update', 
+      payload: { 
+        ...room, 
+        storyContributions,
+        currentStoryPlayerIndex: newIndex
+      } 
+    });
   }
 }
 

@@ -6,6 +6,7 @@ import PlayerSetup from './PlayerSetup';
 import RoleReveal from './RoleReveal';
 import MissionPhase from './MissionPhase';
 import DrawingCanvas from './DrawingCanvas';
+import StoryPhase from './StoryPhase';
 import DiscussionPhase from './DiscussionPhase';
 import VotingPhase from './VotingPhase';
 import VotingResult from './VotingResult';
@@ -27,7 +28,8 @@ import type {
   Ability,
   WebSocketMessage,
   SecretFact,
-  ChatMessage
+  ChatMessage,
+  StoryContribution
 } from '@shared/schema';
 import { ABILITIES, MISSIONS, getRandomAbility, getMissionAlternatives } from '@shared/schema';
 
@@ -40,6 +42,7 @@ type LocalGamePhase =
   | 'role_reveal'
   | 'mission'
   | 'drawing'
+  | 'story'
   | 'discussion'
   | 'voting'
   | 'voting_result'
@@ -67,6 +70,8 @@ export default function SpyGame() {
   const [isChatMinimized, setIsChatMinimized] = useState(false);
   const [spyChatMessages, setSpyChatMessages] = useState<ChatMessage[]>([]);
   const [isSpyChatMinimized, setIsSpyChatMinimized] = useState(false);
+  const [storyContributions, setStoryContributions] = useState<StoryContribution[]>([]);
+  const [currentStoryPlayerIndex, setCurrentStoryPlayerIndex] = useState(0);
   const { toast } = useToast();
   const { playWinSound } = useAudio();
 
@@ -206,18 +211,37 @@ export default function SpyGame() {
           if (payload.previousRoundVotes) {
             setPreviousRoundVotes(payload.previousRoundVotes);
           }
+          if (payload.storyContributions) {
+            setStoryContributions(payload.storyContributions);
+          }
+          if (payload.currentStoryPlayerIndex !== undefined) {
+            setCurrentStoryPlayerIndex(payload.currentStoryPlayerIndex);
+          }
           
           const serverPhase = payload.status;
           if (serverPhase === 'waiting') setPhase('room_lobby');
           else if (serverPhase === 'role_reveal') setPhase('role_reveal');
           else if (serverPhase === 'mission') setPhase('mission');
           else if (serverPhase === 'drawing') setPhase('drawing');
+          else if (serverPhase === 'story') setPhase('story');
           else if (serverPhase === 'discussion') setPhase('discussion');
           else if (serverPhase === 'voting') setPhase('voting');
           else if (serverPhase === 'voting_result') setPhase('voting_result');
           else if (serverPhase === 'game_over') {
             setPhase('game_over');
             setWinner(payload.winner);
+          }
+        }
+        break;
+
+      case 'story_turn_update':
+        if (payload && 'id' in payload) {
+          setRoom(payload);
+          if (payload.storyContributions) {
+            setStoryContributions(payload.storyContributions);
+          }
+          if (payload.currentStoryPlayerIndex !== undefined) {
+            setCurrentStoryPlayerIndex(payload.currentStoryPlayerIndex);
           }
         }
         break;
@@ -778,6 +802,20 @@ export default function SpyGame() {
     <div className="min-h-screen">
       <CyberBackground />
       
+      {phase !== 'splash' && phase !== 'game_over' && (
+        <button
+          onClick={handleBackToMenu}
+          className="fixed top-4 right-4 z-50 flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/20 border border-red-500/50 text-red-400 hover:bg-red-500/30 hover:border-red-500 transition-all text-sm"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Sair
+        </button>
+      )}
+      
       {phase === 'splash' && (
         <SplashScreen onSelectMode={handleSelectMode} />
       )}
@@ -846,6 +884,28 @@ export default function SpyGame() {
           duration={mission.duration}
           onSubmit={handleSubmitDrawing}
           isAgent={(mode === 'online' && myPlayer ? myPlayer.role : currentDrawingPlayer?.role) === 'agent' || (mode === 'online' && myPlayer ? myPlayer.role : currentDrawingPlayer?.role) === 'triple'}
+        />
+      )}
+
+      {phase === 'story' && mission && myPlayer && (
+        <StoryPhase
+          mission={mission}
+          players={players}
+          currentPlayerId={myPlayerId}
+          currentStoryPlayerIndex={currentStoryPlayerIndex}
+          storyContributions={storyContributions}
+          onSubmitContribution={(text) => {
+            if (room && myPlayer) {
+              sendMessage({
+                action: 'submit_story_contribution',
+                roomId: room.id,
+                payload: { playerId: myPlayer.id, playerName: myPlayer.name, text }
+              });
+            }
+          }}
+          onSkipToVoting={handleStartVoting}
+          isHost={isHost}
+          playerRole={myPlayer.role}
         />
       )}
 

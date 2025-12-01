@@ -521,9 +521,16 @@ export class MemStorage implements IStorage {
         if (room.mission?.secretFact.type === 'drawing') {
           room.status = 'drawing';
           room.currentDrawingPlayerIndex = 0;
+        } else if (room.mission?.secretFact.type === 'story') {
+          room.status = 'story';
+          room.currentStoryPlayerIndex = 0;
+          room.storyContributions = [];
         } else {
           room.status = 'discussion';
         }
+        break;
+      case 'story':
+        room.status = 'discussion';
         break;
       case 'drawing':
         room.status = 'discussion';

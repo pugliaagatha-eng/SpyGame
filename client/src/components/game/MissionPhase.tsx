@@ -182,24 +182,37 @@ export default function MissionPhase({
             </div>
           )}
 
-          {mission.secretFact.type === 'story' && mission.secretFact.storyTitle && (
+          {mission.secretFact.type === 'story' && (
             <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/30">
-              <h3 className="text-sm font-semibold text-purple-400 mb-2 flex items-center gap-2">
-                <BookOpen className="w-4 h-4" />
-                História: {mission.secretFact.storyTitle}
-              </h3>
-              {isAgent && (
-                <p className="text-purple-300/80 text-sm italic mb-2">
-                  "{mission.secretFact.storyPrompt}"
-                </p>
+              {isAgent && mission.secretFact.storyTitle && (
+                <>
+                  <h3 className="text-sm font-semibold text-purple-400 mb-2 flex items-center gap-2">
+                    <BookOpen className="w-4 h-4" />
+                    História: {mission.secretFact.storyTitle}
+                  </h3>
+                  <p className="text-purple-300/80 text-sm italic mb-2">
+                    "{mission.secretFact.storyPrompt}"
+                  </p>
+                </>
               )}
               {isSpy && (
-                <p className="text-red-400/80 text-sm text-center">
-                  Você NÃO conhece a história. Improvise baseado nas contribuições dos outros!
-                </p>
+                <>
+                  <h3 className="text-sm font-semibold text-purple-400 mb-2 flex items-center gap-2">
+                    <BookOpen className="w-4 h-4" />
+                    História Desconhecida
+                  </h3>
+                  {mission.secretFact.spyHint && (
+                    <p className="text-amber-400/80 text-sm text-center mb-2 italic">
+                      Pista: "{mission.secretFact.spyHint}"
+                    </p>
+                  )}
+                  <p className="text-red-400/80 text-sm text-center">
+                    Improvise baseado nas contribuições dos outros jogadores!
+                  </p>
+                </>
               )}
               <p className="text-xs text-center text-muted-foreground mt-3">
-                Cada jogador escreve até 200 caracteres para continuar a história
+                Cada jogador escreve até 400 caracteres para continuar a história
               </p>
             </div>
           )}
