@@ -39,7 +39,7 @@ SpyGamePlus is a multiplayer social deduction game where players take on roles a
   - **Desenho (Drawing)**: 15 missions - players draw a secret word with a hint
   - **Ordem (Order)**: 12 missions - drag 4 emojis in the correct order by criteria
   - **Código Secreto (Code)**: 12 missions - enter a 5-digit secret code
-  - **História (Story)**: 10 missions - agents know a story, spies don't, each player writes 200 chars
+  - **História (Story)**: 10 missions - agents know a story, spies don't, each player writes 400 chars
 - **Real-time Communication**: WebSocket-based synchronization for multiplayer gameplay
 - **Voting System**: Tie detection and elimination mechanics
 - **Drawing Canvas**: Interactive canvas for drawing missions
@@ -73,10 +73,11 @@ npm start
 1. Role Reveal - Players see their secret role
 2. Mission - Players receive mission (Agents see secret, Spies don't)
 3. Drawing - If mission requires drawing, all players draw
-4. Discussion - Players discuss and identify suspects
-5. Voting - Vote to eliminate someone
-6. Voting Result - See who was eliminated
-7. Game Over - Winners announced
+4. Story - If mission is story type, each player writes 400 chars (turn-based)
+5. Discussion - Players discuss and identify suspects
+6. Voting - Vote to eliminate someone
+7. Voting Result - See who was eliminated
+8. Game Over - Winners announced
 
 ### Win Conditions
 - **Agents**: Eliminate all spies
@@ -94,6 +95,14 @@ npm start
 Currently using in-memory storage (MemStorage). Rooms are lost when server restarts. For persistence, a database implementation would be needed.
 
 ## Recent Changes
+- December 1, 2024: Story Phase Implementation
+  - Added StoryPhase component for turn-based story contributions (400 chars per player)
+  - Implemented spyHint field for story missions - gives spies subtle clues without revealing actual title
+  - Spies now see "História Desconhecida" instead of actual story titles in mission phase
+  - Added "Sair da Sala" (Leave Room) button accessible in all game phases
+  - Story phase uses WebSocket for real-time turn synchronization
+  - Server handles story_contribution messages and broadcasts story_turn_update
+
 - December 1, 2024: Mission System Overhaul
   - Restricted mission types to exactly 4: Drawing, Order, Code (5 digits), Story
   - Updated SecretFact interface to only accept 'drawing' | 'order' | 'code' | 'story'
