@@ -260,8 +260,15 @@ export class MemStorage implements IStorage {
     let hasTriple = false;
     let hasJester = false;
     
-    // Triplo e Tolo aparecem apenas com 7 ou mais jogadores
-    if (room.players.length >= 7) {
+    // Com 7 jogadores: Tolo OU Triplo (aleatório)
+    // Com 8+ jogadores: Tolo E Triplo
+    if (room.players.length === 7) {
+      if (Math.random() < 0.5) {
+        hasTriple = true;
+      } else {
+        hasJester = true;
+      }
+    } else if (room.players.length >= 8) {
       hasTriple = true;
       hasJester = true;
     }
@@ -392,6 +399,7 @@ export class MemStorage implements IStorage {
         const eliminatedPlayer = room.players.find((p: Player) => p.id === eliminatedId);
         if (eliminatedPlayer && !eliminatedPlayer.isEliminated) {
           eliminatedPlayer.isEliminated = true;
+          room.lastEliminatedId = eliminatedId;
 
           if (eliminatedPlayer.role === 'jester') {
             room.winner = 'jester';
@@ -412,6 +420,7 @@ export class MemStorage implements IStorage {
           }
         }
       } else {
+        room.lastEliminatedId = undefined;
         room.status = 'voting_result';
       }
     }

@@ -215,6 +215,17 @@ export default function MissionPhase({
                   ? 'Você NÃO conhece a história desta missão.' 
                   : 'Você NÃO conhece o fato secreto desta missão.'}
               </p>
+              {mission.secretFact.spyHint && (
+                <div className="p-3 rounded bg-amber-500/20 border border-amber-400/50 mb-3">
+                  <h4 className="text-xs font-semibold text-amber-400 mb-1 flex items-center gap-1">
+                    <Phone className="w-3 h-3" />
+                    Telefonema Interceptado (Dica Críptica)
+                  </h4>
+                  <p className="text-sm text-center text-amber-300 font-mono">
+                    "{mission.secretFact.spyHint}"
+                  </p>
+                </div>
+              )}
               {!isStoryMission && onDecryptSecret && (
                 <div className="p-3 rounded bg-red-500/20 border border-red-400/50">
                   <h4 className="text-xs font-semibold text-red-400 mb-2 flex items-center gap-1">

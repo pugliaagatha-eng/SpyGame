@@ -29,7 +29,11 @@ export default function VotingResult({
   };
 
   const sortedPlayers = [...players]
-    .filter(p => !p.isEliminated || p.id === eliminatedPlayer?.id)
+    .filter(p => {
+      if (p.id === eliminatedPlayer?.id) return true;
+      if (p.isEliminated && p.id !== eliminatedPlayer?.id) return false;
+      return true;
+    })
     .sort((a, b) => getVoteCount(b.id) - getVoteCount(a.id));
 
   const roleInfo = eliminatedPlayer?.role ? ROLE_INFO[eliminatedPlayer.role] : null;

@@ -129,6 +129,18 @@ npm start
 Currently using in-memory storage (MemStorage). Rooms are lost when server restarts. For persistence, a database implementation would be needed.
 
 ## Recent Changes
+- December 2, 2024: Simplified Voting System + Spy Hints
+  - Removed local client-side tracking of lastEliminatedId and previouslyEliminatedIds
+  - Now using server's room.lastEliminatedId as single source of truth for eliminated players
+  - VotingResult.tsx derives previously eliminated players from isEliminated flag in player array
+  - Added spyHint field to all mission types with cryptic clues:
+    - Drawing missions: Thematic hints (e.g., "Aparece depois da tempestade" for Arco-íris)
+    - Order missions: Conceptual hints (e.g., "Pense em dimensões físicas" for size ordering)
+    - Code missions: Pattern hints (e.g., "Padrão repetitivo ABABA" for 42424)
+    - Story missions: Scrambled letters (already existed)
+  - Spies now see "Telefonema Interceptado" with cryptic hint in MissionPhase
+  - Hints are designed to help spies without revealing the exact answer
+
 - December 2, 2024: Comprehensive React #130 Fix + UX Improvements
   - Extended typeof guards to ALL mission/ability properties across ALL components:
     - MissionPhase: mission.secretFact.value, mission.title

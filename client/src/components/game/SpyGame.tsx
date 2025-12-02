@@ -565,20 +565,18 @@ export default function SpyGame() {
     const shuffled = [...playerList].sort(() => Math.random() - 0.5);
     const numSpies = Math.max(1, Math.floor(playerList.length / 3));
     
-    // Até 7 jogadores: Tolo OU Triplo (aleatório)
-    // 7+ jogadores: Tolo E Triplo
+    // Com 7 jogadores: Tolo OU Triplo (aleatório)
+    // Com 8+ jogadores: Tolo E Triplo
     let hasTriple = false;
     let hasJester = false;
     
-    if (playerList.length >= 5 && playerList.length < 7) {
-      // Escolhe aleatoriamente entre Tolo ou Triplo
+    if (playerList.length === 7) {
       if (Math.random() < 0.5) {
         hasTriple = true;
       } else {
         hasJester = true;
       }
-    } else if (playerList.length >= 7) {
-      // Ambos
+    } else if (playerList.length >= 8) {
       hasTriple = true;
       hasJester = true;
     }
@@ -1188,7 +1186,7 @@ export default function SpyGame() {
       {phase === 'voting_result' && (
         <VotingResult
           players={players}
-          eliminatedPlayer={players.find(p => p.isEliminated && !winner) ?? null}
+          eliminatedPlayer={room?.lastEliminatedId ? players.find(p => p.id === room.lastEliminatedId) ?? null : null}
           votes={votes}
           onContinue={handleContinueFromResult}
           currentRound={currentRound}
