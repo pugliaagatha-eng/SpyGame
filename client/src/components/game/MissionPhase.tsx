@@ -21,6 +21,7 @@ interface MissionPhaseProps {
   myPlayerId?: string;
   onDecryptSecret?: () => void;
   hasDecrypted?: boolean;
+  isEliminated?: boolean;
 }
 
 export default function MissionPhase({
@@ -37,6 +38,7 @@ export default function MissionPhase({
   myPlayerId,
   onDecryptSecret,
   hasDecrypted = false,
+  isEliminated = false,
 }: MissionPhaseProps) {
   const [showPhoneCall, setShowPhoneCall] = useState(false);
   const [codeInput, setCodeInput] = useState(['', '', '', '', '']);
@@ -108,6 +110,43 @@ export default function MissionPhase({
       default: return 'text-primary border-primary';
     }
   };
+
+  // Se o jogador foi eliminado, mostrar apenas visualização
+  if (isEliminated) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6">
+        <Card className="w-full max-w-2xl neon-border">
+          <CardHeader>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Skull className="w-6 h-6 text-red-500" />
+              <CardTitle className="font-serif text-2xl text-center text-red-400">Você foi Eliminado</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-center">
+              <p className="text-muted-foreground">
+                Você foi eliminado e agora está apenas observando o jogo.
+              </p>
+              <p className="text-muted-foreground mt-2">
+                Aguarde o fim da partida para ver quem vence!
+              </p>
+            </div>
+            {isHost && (
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={isDrawingMission ? onStartDrawing : onStartDiscussion}
+                data-testid="button-start-mission"
+              >
+                {isDrawingMission ? 'Iniciar Desenho' : 'Iniciar Missão'}
+                <ChevronRight className="w-4 h-4 ml-2" />
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6">

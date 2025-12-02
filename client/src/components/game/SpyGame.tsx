@@ -1102,6 +1102,7 @@ export default function SpyGame() {
             myPlayerId={myPlayerId || undefined}
             onDecryptSecret={mode === 'online' && myPlayer?.role === 'spy' ? handleDecryptSecret : undefined}
             hasDecrypted={hasDecrypted}
+            isEliminated={myPlayer?.isEliminated || false}
           />
       )}
 

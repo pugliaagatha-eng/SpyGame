@@ -341,8 +341,13 @@ export class MemStorage implements IStorage {
         }
       });
       
+      // Contar apenas votos de jogadores ativos (não eliminados)
       Object.entries(room.votes).forEach(([vid, tid]) => {
         const voter = room.players.find((p: Player) => p.id === vid);
+        
+        // Ignorar votos de jogadores eliminados
+        if (!voter || voter.isEliminated) return;
+        
         const hasNegativeVote = voter?.role === 'jester' && 
           voter.abilities?.some((a: Ability) => a.id === 'negative_vote');
         
@@ -381,7 +386,7 @@ export class MemStorage implements IStorage {
         }
         
         const eliminatedPlayer = room.players.find((p: Player) => p.id === eliminatedId);
-        if (eliminatedPlayer) {
+        if (eliminatedPlayer && !eliminatedPlayer.isEliminated) {
           eliminatedPlayer.isEliminated = true;
 
           if (eliminatedPlayer.role === 'jester') {

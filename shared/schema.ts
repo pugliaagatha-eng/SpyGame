@@ -295,18 +295,18 @@ export const ORDER_MISSIONS: Mission[] = [
 ];
 
 export const CODE_MISSIONS: Mission[] = [
-  { id: 3001, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '19847', hint: 'Ano do livro de Orwell + número da sorte' }, duration: 60 },
-  { id: 3002, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '00007', hint: 'Código de um famoso agente secreto' }, duration: 60 },
-  { id: 3003, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '42424', hint: 'A resposta para tudo (repetida)' }, duration: 60 },
-  { id: 3004, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '12345', hint: 'Sequência numérica simples' }, duration: 60 },
-  { id: 3005, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '31415', hint: 'Primeiros dígitos de Pi' }, duration: 60 },
-  { id: 3006, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '99999', hint: 'O maior número de 5 dígitos iguais' }, duration: 60 },
-  { id: 3007, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '11111', hint: 'Cinco números iguais (o primeiro)' }, duration: 60 },
-  { id: 3008, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '54321', hint: 'Contagem regressiva' }, duration: 60 },
-  { id: 3009, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '24680', hint: 'Números pares em sequência' }, duration: 60 },
-  { id: 3010, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '13579', hint: 'Números ímpares em sequência' }, duration: 60 },
-  { id: 3011, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '02468', hint: 'Números pares começando do zero' }, duration: 60 },
-  { id: 3012, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '86420', hint: 'Números pares decrescentes' }, duration: 60 },
+  { id: 3001, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '19847', hint: 'Ano do livro de Orwell + número da sorte' }, duration: 50 },
+  { id: 3002, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '00007', hint: 'Código de um famoso agente secreto' }, duration: 50 },
+  { id: 3003, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '42424', hint: 'A resposta para tudo (repetida)' }, duration: 50 },
+  { id: 3004, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '12345', hint: 'Sequência numérica simples' }, duration: 50 },
+  { id: 3005, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '31415', hint: 'Primeiros dígitos de Pi' }, duration: 50 },
+  { id: 3006, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '99999', hint: 'O maior número de 5 dígitos iguais' }, duration: 50 },
+  { id: 3007, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '11111', hint: 'Cinco números iguais (o primeiro)' }, duration: 50 },
+  { id: 3008, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '54321', hint: 'Contagem regressiva' }, duration: 50 },
+  { id: 3009, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '24680', hint: 'Números pares em sequência' }, duration: 50 },
+  { id: 3010, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '13579', hint: 'Números ímpares em sequência' }, duration: 50 },
+  { id: 3011, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '02468', hint: 'Números pares começando do zero' }, duration: 50 },
+  { id: 3012, title: 'Código Secreto', description: 'Digite o código de 5 dígitos. Agentes sabem o código, espiões tentam adivinhar!', secretFact: { type: 'code', value: '86420', hint: 'Números pares decrescentes' }, duration: 50 },
 ];
 
 export const STORY_MISSIONS: Mission[] = [
