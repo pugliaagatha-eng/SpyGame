@@ -278,9 +278,13 @@ export class MemStorage implements IStorage {
       
       let abilities: Ability[] = [getRandomAbility(role)];
       
+      // Espiões recebem uma habilidade comum + Transcrever Ligação
       if (role === 'spy') {
-        const spyAbilities = [SPY_ABILITY_SCRAMBLE, SPY_ABILITY_REVOTE];
-        abilities = [{ ...spyAbilities[Math.floor(Math.random() * spyAbilities.length)], used: false }];
+        const commonAbility = getRandomAbility('agent'); // Habilidade comum (escudo, tempo extra, etc)
+        abilities = [
+          { ...commonAbility, used: false },
+          { ...SPY_ABILITY_SCRAMBLE, used: false } // Transcrever Ligação para todos os espiões
+        ];
       }
       
       return { ...player, role, abilities, isReady: false };

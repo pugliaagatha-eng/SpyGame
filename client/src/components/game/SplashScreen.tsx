@@ -73,7 +73,7 @@ export default function SplashScreen({ onSelectMode }: SplashScreenProps) {
               <ul className="space-y-2 text-muted-foreground">
                 <li><span className="text-cyan-400 font-semibold">Agente:</span> Conhece o Fato Secreto da missão. Seu objetivo é identificar e eliminar todos os Espiões através da votação.</li>
                 <li><span className="text-red-500 font-semibold">Espião:</span> NÃO conhece o Fato Secreto. Deve tentar descobrir o segredo observando os Agentes e se misturar sem ser descoberto. <strong>Sempre há pelo menos 2 Espiões em cada partida.</strong></li>
-                <li><span className="text-purple-500 font-semibold">Agente Triplo:</span> Conhece o Fato Secreto, mas vence com os Espiões. Deve ajudá-los discretamente sem se revelar. <strong>Aparece apenas com 7 ou mais jogadores.</strong></li>
+                <li><span className="text-purple-500 font-semibold">Agente Triplo:</span> Conhece o Fato Secreto e vence com os Agentes. Porém, os Espiões veem seu nome como "Espião". Deve ajudar os Agentes sem revelar sua identidade aos Espiões. <strong>Aparece apenas com 7 ou mais jogadores.</strong></li>
                 <li><span className="text-yellow-500 font-semibold">O Tolo:</span> Vence sozinho se for eliminado! Deve agir de forma suspeita para atrair votos sem parecer óbvio demais. <strong>Aparece apenas com 7 ou mais jogadores.</strong></li>
               </ul>
             </section>

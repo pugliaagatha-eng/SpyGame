@@ -12,6 +12,7 @@ interface VotingResultProps {
   onContinue: () => void;
   currentRound: number;
   maxRounds: number;
+  isHost?: boolean;
 }
 
 export default function VotingResult({
@@ -21,6 +22,7 @@ export default function VotingResult({
   onContinue,
   currentRound,
   maxRounds,
+  isHost = false,
 }: VotingResultProps) {
   const getVoteCount = (playerId: string) => {
     return Object.values(votes).filter(v => v === playerId).length;
@@ -111,8 +113,17 @@ export default function VotingResult({
             </span>
           </div>
 
-          <Button className="w-full" size="lg" onClick={onContinue} data-testid="button-continue">
-            {currentRound < maxRounds ? 'Próxima Rodada' : 'Ver Resultado Final'}
+          <Button 
+            className="w-full" 
+            size="lg" 
+            onClick={onContinue} 
+            disabled={!isHost}
+            data-testid="button-continue"
+          >
+            {isHost 
+              ? (currentRound < maxRounds ? 'Próxima Rodada' : 'Ver Resultado Final')
+              : 'Aguardando Host...'
+            }
             <ChevronRight className="w-4 h-4 ml-2" />
           </Button>
         </CardContent>

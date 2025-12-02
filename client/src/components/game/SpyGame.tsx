@@ -1193,6 +1193,7 @@ export default function SpyGame() {
           onContinue={handleContinueFromResult}
           currentRound={currentRound}
           maxRounds={maxRounds}
+          isHost={myPlayer?.isHost || false}
         />
       )}
 

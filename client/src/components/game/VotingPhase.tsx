@@ -51,6 +51,9 @@ export default function VotingPhase({
   const activePlayers = players.filter(p => !p.isEliminated);
   const votablePlayers = activePlayers.filter(p => p.id !== currentVoter?.id);
   
+  // Verificar se o votante atual foi eliminado
+  const isCurrentVoterEliminated = currentVoter?.isEliminated || false;
+  
   // In online mode, check if the current voter has already voted
   const hasAlreadyVoted = !isLocalMode && currentVoter && votes[currentVoter.id];
   const votedTargetId = hasAlreadyVoted ? votes[currentVoter!.id] : selectedPlayer;
@@ -76,6 +79,34 @@ export default function VotingPhase({
     onConfirmVote();
   };
 
+  // Se o jogador foi eliminado, mostrar apenas visualização
+  if (isCurrentVoterEliminated) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6">
+        <Card className="w-full max-w-lg neon-border">
+          <CardHeader className="text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Badge variant="outline" className="text-red-500 border-red-500">
+                <EyeOff className="w-3 h-3 mr-1" />
+                ELIMINADO
+              </Badge>
+            </div>
+            <CardTitle className="font-serif text-2xl text-red-400">
+              Você foi Eliminado
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-center">
+              <p className="text-muted-foreground">
+                Você não pode mais votar. Aguarde o fim da votação.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  
   // Show confirmation if player has already voted (online mode) or just submitted vote
   if (showConfirmation || hasAlreadyVoted) {
     const votedFor = players.find(p => p.id === votedTargetId);
