@@ -136,9 +136,14 @@ export default function GameOver({ winner, players, onPlayAgain, onBackToMenu }:
                     }`}
                     data-testid={`player-result-${player.id}`}
                   >
-                    <span className={player.isEliminated ? 'line-through' : ''}>
-                      {player.name}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2 h-2 rounded-full ${
+                        player.isReady ? 'bg-green-500' : (player.isConnected ? 'bg-gray-500' : 'bg-red-500')
+                      }`} />
+                      <span className={player.isEliminated ? 'line-through' : ''}>
+                        {player.name}
+                      </span>
+                    </div>
                     {roleInfo && (
                       <Badge variant="outline" className={roleInfo.color}>
                         {roleInfo.name.charAt(0)}

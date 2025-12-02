@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupWebSocket, notifyRoomUpdate } from "./websocket";
+import { setupWebSocket, notifyRoomUpdate, broadcastToRoom } from "./websocket";
 import { createRoomSchema, joinRoomSchema } from "@shared/schema";
 
 export async function registerRoutes(
@@ -81,7 +81,8 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Room not found or host not authorized" });
       }
 
-      notifyRoomUpdate(room.id, room);
+      // Enviar mensagem específica de player_kicked
+      broadcastToRoom(room.id, { type: 'player_kicked', payload: room });
       
       return res.json({ room });
     } catch (error) {

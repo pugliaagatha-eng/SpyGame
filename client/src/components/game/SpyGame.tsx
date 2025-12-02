@@ -199,6 +199,8 @@ export default function SpyGame() {
       case 'player_joined':
       case 'player_left':
       case 'player_kicked':
+      case 'player_removed_from_lobby':
+      case 'player_ready_for_rematch':
         if (payload && 'id' in payload) {
           setRoom(payload);
           setPlayers(payload.players);
@@ -908,12 +910,22 @@ export default function SpyGame() {
   }, [mode, room, players, currentPlayerIndex, sendMessage]);
 
   const handlePlayAgain = useCallback(() => {
+    if (mode === 'online' && room && myPlayerId) {
+      // Marcar jogador como pronto para jogar novamente
+      sendMessage({ 
+        action: 'player_ready_for_rematch', 
+        roomId: room.id, 
+        playerId: myPlayerId 
+      });
+    }
+    
     setPlayers(prev => prev.map(p => ({
       ...p,
       role: undefined,
       isEliminated: false,
       hasVoted: false,
       votedFor: undefined,
+      isReady: p.id === myPlayerId ? true : p.isReady,
       abilities: [{ ...ABILITIES[Math.floor(Math.random() * ABILITIES.length)], used: false }],
     })));
     setCurrentRound(1);
@@ -921,8 +933,11 @@ export default function SpyGame() {
     setDrawings([]);
     setWinner(null);
     setHasDecrypted(false);
-    setPhase(mode === 'online' ? 'room_lobby' : 'player_setup');
-  }, [mode]);
+    
+    if (mode === 'local') {
+      setPhase('player_setup');
+    }
+  }, [mode, room, myPlayerId, sendMessage]);
 
   const handleBackToMenu = useCallback(() => {
     if (mode === 'online' && room && myPlayerId) {

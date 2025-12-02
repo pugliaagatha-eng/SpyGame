@@ -141,6 +141,8 @@ export type WebSocketMessageType =
   | 'player_joined'
   | 'player_left'
   | 'player_kicked'
+  | 'player_removed_from_lobby'
+  | 'player_ready_for_rematch'
   | 'player_disconnecting'
   | 'player_disconnected'
   | 'game_started'

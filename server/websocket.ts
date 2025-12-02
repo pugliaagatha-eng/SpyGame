@@ -138,6 +138,10 @@ async function handleMessage(ws: ExtendedWebSocket, message: WebSocketMessage & 
       await handleDecryptSecret(ws.roomId!, payload as { playerId: string; playerName: string });
       break;
 
+    case 'player_ready_for_rematch':
+      await handlePlayerReadyForRematch(ws.roomId!, ws.playerId!);
+      break;
+
     case 'ping':
       sendToClient(ws, { type: 'room_update', payload: { pong: true } });
       break;
@@ -328,6 +332,20 @@ async function handleDisconnect(ws: ExtendedWebSocket) {
           }, DISCONNECT_TIMEOUT_MS);
           
           disconnectTimeouts.set(timeoutKey, timeout);
+        } else if (room.status === 'game_over') {
+          // No game_over, aguardar 5 segundos antes de remover o jogador
+          const timeoutKey = `${roomId}:${playerId}`;
+          
+          if (disconnectTimeouts.has(timeoutKey)) {
+            clearTimeout(disconnectTimeouts.get(timeoutKey)!);
+          }
+          
+          const timeout = setTimeout(async () => {
+            await handleGameOverPlayerRemoval(roomId, playerId);
+            disconnectTimeouts.delete(timeoutKey);
+          }, 5000); // 5 segundos
+          
+          disconnectTimeouts.set(timeoutKey, timeout);
         }
       }
     }
@@ -396,6 +414,40 @@ async function handlePlayerRemoval(roomId: string, playerId: string) {
         message: 'Jogo encerrado por falta de jogadores (mínimo 5)' 
       } 
     });
+  }
+}
+
+async function handleGameOverPlayerRemoval(roomId: string, playerId: string) {
+  const room = await storage.getRoom(roomId);
+  if (!room || room.status !== 'game_over') return;
+  
+  const player = room.players.find(p => p.id === playerId);
+  if (!player || player.isConnected) return;
+  
+  // Remover o jogador da lista de jogadores
+  room.players = room.players.filter(p => p.id !== playerId);
+  await storage.updateRoom(roomId, { players: room.players });
+  
+  broadcastToRoom(roomId, { 
+    type: 'player_removed_from_lobby', 
+    payload: room
+  });
+}
+
+async function handlePlayerReadyForRematch(roomId: string, playerId: string) {
+  const room = await storage.getRoom(roomId);
+  if (!room || room.status !== 'game_over') return;
+  
+  const player = room.players.find(p => p.id === playerId);
+  if (!player) return;
+  
+  player.isReady = true;
+  player.isConnected = true;
+  await storage.updateRoom(roomId, { players: room.players });
+  
+  const updatedRoom = await storage.getRoom(roomId);
+  if (updatedRoom) {
+    broadcastToRoom(roomId, { type: 'player_ready_for_rematch', payload: updatedRoom });
   }
 }
 
@@ -613,7 +665,7 @@ function sendToClient(ws: ExtendedWebSocket, message: WebSocketMessage) {
   }
 }
 
-function broadcastToRoom(roomId: string, message: WebSocketMessage, exclude?: ExtendedWebSocket) {
+export function broadcastToRoom(roomId: string, message: WebSocketMessage, exclude?: ExtendedWebSocket) {
   const clients = roomClients[roomId];
   if (clients) {
     clients.forEach((client) => {
