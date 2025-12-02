@@ -129,6 +129,19 @@ npm start
 Currently using in-memory storage (MemStorage). Rooms are lost when server restarts. For persistence, a database implementation would be needed.
 
 ## Recent Changes
+- December 2, 2024: Comprehensive React #130 Fix + UX Improvements
+  - Extended typeof guards to ALL mission/ability properties across ALL components:
+    - MissionPhase: mission.secretFact.value, mission.title
+    - DiscussionPhase: mission.secretFact.hint, mission.title, mission.secretFact.rankingCriteria
+    - StoryPhase: mission.secretFact.storyTitle, mission.secretFact.storyPrompt, mission.title
+    - OrderPhase: rankingCriteria, mission.title
+    - AbilityPanel, VotingPhase, RoleReveal: ability.name, ability.description
+  - Updated disconnect timing: 40 seconds inactivity warning + 10 second reconnect grace period
+  - Added 'player_disconnecting' WebSocket event for warning players before removal
+  - Repositioned spy chat from bottom-24 to bottom-4 (same height as normal chat, opposite side)
+  - Drawing phase now shows scrambled fact for spies with decrypt button instead of "observe others"
+  - Added kicked/banned player screen with 10-second countdown and auto-redirect to splash
+
 - December 1, 2024: React #130 Black Screen Fix and Ability Usage Fix
   - Added type safety (typeof checks) for all dynamic values that might be objects:
     - mission.secretFact.hint, mission.secretFact.value
