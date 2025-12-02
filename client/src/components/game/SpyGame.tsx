@@ -215,7 +215,8 @@ export default function SpyGame() {
             setOrderSubmissions(payload.orderSubmissions);
           }
           
-          if (message.type === 'player_kicked' && payload.players.every(p => p.id !== myPlayerId)) {
+          // Se a mensagem é player_kicked e meu ID não está mais na lista de jogadores, fui expulso
+          if (message.type === 'player_kicked' && myPlayerId && !payload.players.find(p => p.id === myPlayerId)) {
             setIsKicked(true);
             setRoom(null);
             setMyPlayerId(null);
