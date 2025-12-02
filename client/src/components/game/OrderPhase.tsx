@@ -133,7 +133,7 @@ export default function OrderPhase({
             MISSÃO DE ORDEM
           </Badge>
           <CardTitle className="font-serif text-xl sm:text-2xl neon-text">
-            {mission.title}
+            {typeof mission.title === 'string' ? mission.title : String(mission.title || '')}
           </CardTitle>
           <p className="text-sm text-muted-foreground">
             Arraste os emojis na ordem correta
@@ -157,7 +157,7 @@ export default function OrderPhase({
                 <span className="text-xs font-semibold text-cyan-400">INFORMAÇÃO SECRETA</span>
               </div>
               <p className="text-sm text-cyan-300 text-center">
-                Critério: <span className="font-semibold">{rankingCriteria}</span>
+                Critério: <span className="font-semibold">{typeof rankingCriteria === 'string' ? rankingCriteria : String(rankingCriteria || '')}</span>
               </p>
               <p className="text-xs text-cyan-400/60 text-center mt-1">
                 Ordem correta: {correctOrder.join(' → ')}

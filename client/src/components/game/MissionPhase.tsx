@@ -155,7 +155,7 @@ export default function MissionPhase({
             <span className="ml-1">RODADA {currentRound}</span>
           </Badge>
           <CardTitle className="font-serif text-2xl neon-text">
-            {mission.title}
+            {typeof mission.title === 'string' ? mission.title : String(mission.title || '')}
           </CardTitle>
         </CardHeader>
         

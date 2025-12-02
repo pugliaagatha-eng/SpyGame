@@ -81,6 +81,8 @@ export default function SpyGame() {
   const [codeSubmissions, setCodeSubmissions] = useState<CodeSubmission[]>([]);
   const [orderSubmissions, setOrderSubmissions] = useState<OrderSubmission[]>([]);
   const [hasDecrypted, setHasDecrypted] = useState(false);
+  const [scrambledFact, setScrambledFact] = useState<string | undefined>(undefined);
+  const [isKicked, setIsKicked] = useState(false);
   
   const isChatMinimizedRef = useRef(isChatMinimized);
   const isSpyChatMinimizedRef = useRef(isSpyChatMinimized);
@@ -212,11 +214,26 @@ export default function SpyGame() {
           }
           
           if (message.type === 'player_kicked' && payload.players.every(p => p.id !== myPlayerId)) {
-            toast({ title: 'Você foi expulso!', description: 'O host removeu você da sala.', variant: 'destructive' });
+            setIsKicked(true);
             setRoom(null);
             setMyPlayerId(null);
-            setPhase('splash');
             localStorage.removeItem('spy-game-session');
+          }
+        }
+        break;
+
+      case 'player_disconnecting':
+        {
+          const disconnectingPayload = message.payload as { room: Room; playerId: string; playerName: string; message: string; graceSeconds: number };
+          if (disconnectingPayload && disconnectingPayload.room) {
+            setRoom(disconnectingPayload.room);
+            setPlayers(disconnectingPayload.room.players);
+            
+            toast({
+              title: 'Jogador desconectando...',
+              description: disconnectingPayload.message,
+              variant: 'default',
+            });
           }
         }
         break;
@@ -288,6 +305,7 @@ export default function SpyGame() {
           else if (serverPhase === 'mission') {
             setPhase('mission');
             setHasDecrypted(false);
+            setScrambledFact(undefined);
           }
           else if (serverPhase === 'drawing') setPhase('drawing');
           else if (serverPhase === 'story') setPhase('story');
@@ -656,7 +674,17 @@ export default function SpyGame() {
   }, [mode, room, myPlayer, sendMessage]);
 
   const handleDecryptSecret = useCallback(() => {
-    if (mode === 'online' && room && myPlayer && myPlayer.role === 'spy' && !hasDecrypted) {
+    if (mode === 'online' && room && myPlayer && myPlayer.role === 'spy' && !hasDecrypted && mission) {
+      const secretValue = mission.secretFact.value || '';
+      const valueStr = typeof secretValue === 'string' ? secretValue : String(secretValue);
+      const letters = valueStr.split('');
+      for (let i = letters.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [letters[i], letters[j]] = [letters[j], letters[i]];
+      }
+      const scrambled = letters.join('');
+      setScrambledFact(scrambled);
+      
       sendMessage({ 
         action: 'decrypt_secret', 
         roomId: room.id,
@@ -667,7 +695,7 @@ export default function SpyGame() {
       });
       setHasDecrypted(true);
     }
-  }, [mode, room, myPlayer, hasDecrypted, sendMessage]);
+  }, [mode, room, myPlayer, hasDecrypted, mission, sendMessage]);
 
   const handleSubmitOrder = useCallback((order: string[]) => {
     if (mode === 'online' && room && myPlayer) {
@@ -941,6 +969,38 @@ export default function SpyGame() {
     ? ['discussion', 'voting'].includes(phase) && !!myPlayer && myPlayer.id
     : phase === 'voting' && !!currentVoter && currentVoter.id;
 
+  if (isKicked) {
+    return (
+      <div className="min-h-screen">
+        <CyberBackground />
+        <div className="min-h-screen flex flex-col items-center justify-center p-6">
+          <div className="text-center max-w-md">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </div>
+            <h1 className="text-3xl font-serif font-bold text-red-400 mb-4">Você foi expulso!</h1>
+            <p className="text-muted-foreground mb-8">
+              O host removeu você da sala. Você pode entrar em outra sala ou criar uma nova.
+            </p>
+            <button
+              onClick={() => {
+                setIsKicked(false);
+                setPhase('splash');
+              }}
+              className="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-semibold transition-colors"
+            >
+              Voltar ao Menu
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
       <CyberBackground />
@@ -1032,6 +1092,9 @@ export default function SpyGame() {
           duration={mission.duration}
           onSubmit={handleSubmitDrawing}
           isAgent={(mode === 'online' && myPlayer ? myPlayer.role : currentDrawingPlayer?.role) === 'agent' || (mode === 'online' && myPlayer ? myPlayer.role : currentDrawingPlayer?.role) === 'triple'}
+          scrambledFact={scrambledFact}
+          onDecrypt={mode === 'online' && myPlayer?.role === 'spy' && !hasDecrypted ? handleDecryptSecret : undefined}
+          hasDecrypted={hasDecrypted}
         />
       )}
 

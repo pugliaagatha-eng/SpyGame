@@ -83,12 +83,12 @@ export default function StoryPhase({
             CONSTRUÇÃO DA HISTÓRIA
           </Badge>
           <CardTitle className="font-serif text-2xl neon-text">
-            {mission.title}
+            {typeof mission.title === 'string' ? mission.title : String(mission.title || '')}
           </CardTitle>
           
           {isAgent && mission.secretFact.storyTitle && (
             <p className="text-purple-300 text-sm mt-2">
-              História: <span className="font-semibold">{mission.secretFact.storyTitle}</span>
+              História: <span className="font-semibold">{typeof mission.secretFact.storyTitle === 'string' ? mission.secretFact.storyTitle : String(mission.secretFact.storyTitle)}</span>
             </p>
           )}
           
@@ -138,7 +138,7 @@ export default function StoryPhase({
             <div className="p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
               <h4 className="text-sm font-semibold text-cyan-400 mb-2">Contexto da História:</h4>
               <p className="text-sm text-cyan-300/80 italic">
-                "{mission.secretFact.storyPrompt}"
+                "{typeof mission.secretFact.storyPrompt === 'string' ? mission.secretFact.storyPrompt : String(mission.secretFact.storyPrompt)}"
               </p>
             </div>
           )}

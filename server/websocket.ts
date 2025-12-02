@@ -15,8 +15,10 @@ interface RoomClients {
 
 const roomClients: RoomClients = {};
 const disconnectTimeouts: Map<string, NodeJS.Timeout> = new Map();
+const pendingRemovalTimeouts: Map<string, NodeJS.Timeout> = new Map();
 
-const DISCONNECT_TIMEOUT_MS = 45000; // 45 seconds
+const DISCONNECT_TIMEOUT_MS = 40000; // 40 seconds before marking as disconnected
+const RECONNECT_GRACE_MS = 10000; // 10 seconds grace period to reconnect before removal
 const MIN_PLAYERS = 5;
 
 export function setupWebSocket(server: Server): WebSocketServer {
@@ -280,6 +282,10 @@ async function handleJoinRoom(ws: ExtendedWebSocket, payload: { roomId: string; 
         clearTimeout(disconnectTimeouts.get(timeoutKey)!);
         disconnectTimeouts.delete(timeoutKey);
       }
+      if (pendingRemovalTimeouts.has(timeoutKey)) {
+        clearTimeout(pendingRemovalTimeouts.get(timeoutKey)!);
+        pendingRemovalTimeouts.delete(timeoutKey);
+      }
     }
     sendToClient(ws, { type: 'room_update', payload: room });
     broadcastToRoom(roomId, { type: 'player_joined', payload: room }, ws);
@@ -330,6 +336,33 @@ async function handleDisconnect(ws: ExtendedWebSocket) {
 }
 
 async function handlePlayerTimeout(roomId: string, playerId: string) {
+  const room = await storage.getRoom(roomId);
+  if (!room || room.status === 'waiting' || room.status === 'game_over') return;
+  
+  const player = room.players.find(p => p.id === playerId);
+  if (!player || player.isConnected) return;
+  
+  broadcastToRoom(roomId, { 
+    type: 'player_disconnecting', 
+    payload: { 
+      room, 
+      playerId, 
+      playerName: player.name,
+      message: `${player.name} está desconectado. Reconexão em 10s...`,
+      graceSeconds: 10
+    } 
+  });
+  
+  const removalKey = `${roomId}:${playerId}`;
+  const removalTimeout = setTimeout(async () => {
+    await handlePlayerRemoval(roomId, playerId);
+    pendingRemovalTimeouts.delete(removalKey);
+  }, RECONNECT_GRACE_MS);
+  
+  pendingRemovalTimeouts.set(removalKey, removalTimeout);
+}
+
+async function handlePlayerRemoval(roomId: string, playerId: string) {
   const room = await storage.getRoom(roomId);
   if (!room || room.status === 'waiting' || room.status === 'game_over') return;
   

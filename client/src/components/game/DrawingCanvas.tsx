@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eraser, Pencil, RotateCcw, Check, Palette } from 'lucide-react';
+import { Eraser, Pencil, RotateCcw, Check, Palette, Headphones, Shuffle } from 'lucide-react';
 import Timer from './Timer';
 
 interface DrawingCanvasProps {
@@ -11,6 +11,9 @@ interface DrawingCanvasProps {
   duration: number;
   onSubmit: (imageData: string) => void;
   isAgent: boolean;
+  scrambledFact?: string;
+  onDecrypt?: () => void;
+  hasDecrypted?: boolean;
 }
 
 const COLORS = [
@@ -33,6 +36,9 @@ export default function DrawingCanvas({
   duration,
   onSubmit,
   isAgent,
+  scrambledFact,
+  onDecrypt,
+  hasDecrypted = false,
 }: DrawingCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -184,9 +190,30 @@ export default function DrawingCanvas({
                 Desenhe: <span className="neon-text">{word}</span>
               </span>
             ) : (
-              <span className="text-red-400">
-                Você não sabe o que desenhar. Observe os outros e improvise!
-              </span>
+              <div className="space-y-2">
+                <span className="text-red-400 block">
+                  Você não sabe o que desenhar. Improvise!
+                </span>
+                {hasDecrypted && scrambledFact ? (
+                  <div className="p-2 rounded bg-red-500/20 border border-red-400/50">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <Shuffle className="w-4 h-4 text-red-400" />
+                      <span className="text-xs text-red-400">Transcrição (Embaralhada)</span>
+                    </div>
+                    <span className="text-amber-300 font-mono text-sm block text-center">{scrambledFact}</span>
+                  </div>
+                ) : onDecrypt && (
+                  <Button
+                    onClick={onDecrypt}
+                    variant="outline"
+                    size="sm"
+                    className="w-full bg-red-500/30 border-red-400 text-red-300 hover:bg-red-500/50"
+                  >
+                    <Headphones className="w-4 h-4 mr-2" />
+                    Transcrever Ligação
+                  </Button>
+                )}
+              </div>
             )}
           </CardTitle>
         </CardHeader>

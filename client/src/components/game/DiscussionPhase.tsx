@@ -70,7 +70,7 @@ export default function DiscussionPhase({
         <CardContent className="space-y-6">
           <div className="p-4 rounded-lg bg-muted/50 border border-border">
             <h3 className="text-sm font-semibold text-muted-foreground mb-2">
-              Missão: {mission.title}
+              Missão: {typeof mission.title === 'string' ? mission.title : String(mission.title || '')}
             </h3>
             {mission.secretFact.type === 'story' ? (
               <p className="text-sm text-muted-foreground">
@@ -95,7 +95,7 @@ export default function DiscussionPhase({
               </p>
               {mission.secretFact.type === 'order' && mission.secretFact.rankingCriteria && (
                 <p className="text-xs text-cyan-400/70 mt-2">
-                  Critério correto: <span className="font-semibold">{mission.secretFact.rankingCriteria}</span>
+                  Critério correto: <span className="font-semibold">{typeof mission.secretFact.rankingCriteria === 'string' ? mission.secretFact.rankingCriteria : String(mission.secretFact.rankingCriteria || '')}</span>
                 </p>
               )}
             </div>
