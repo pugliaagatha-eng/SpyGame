@@ -215,12 +215,19 @@ export default function SpyGame() {
             setOrderSubmissions(payload.orderSubmissions);
           }
           
-          // Se a mensagem é player_kicked e meu ID não está mais na lista de jogadores, fui expulso
-          if (message.type === 'player_kicked' && myPlayerId && !payload.players.find(p => p.id === myPlayerId)) {
-            setIsKicked(true);
-            setRoom(null);
-            setMyPlayerId(null);
-            localStorage.removeItem('spy-game-session');
+          // Se a mensagem é player_kicked, verificar se fui expulso
+          if (message.type === 'player_kicked') {
+            const wasKicked = myPlayerId && !payload.players.find(p => p.id === myPlayerId);
+            if (wasKicked) {
+              // Importante: setar isKicked primeiro, antes de limpar outros estados
+              setIsKicked(true);
+              localStorage.removeItem('spy-game-session');
+              // Limpar estados depois
+              setTimeout(() => {
+                setRoom(null);
+                setMyPlayerId(null);
+              }, 0);
+            }
           }
         }
         break;

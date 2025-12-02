@@ -71,10 +71,10 @@ export default function SplashScreen({ onSelectMode }: SplashScreenProps) {
                 Os Papéis
               </h3>
               <ul className="space-y-2 text-muted-foreground">
-                <li><span className="text-cyan-400 font-semibold">Agente:</span> Elimine os Espiões. Recebe **3 Fatos Secretos** e deve deduzir qual é o correto.</li>
-                <li><span className="text-red-500 font-semibold">Espião:</span> Sobreviva até a maioria. Não recebe os Fatos. Tente descobrir o segredo e se misturar. **Sempre há pelo menos 2 Espiões.**</li>
-                <li><span className="text-purple-500 font-semibold">Agente Triplo:</span> Aparece como Espião para os outros, mas conhece o segredo e vence com os Agentes. **Aparece a partir de 7 jogadores.**</li>
-                <li><span className="text-yellow-500 font-semibold">O Tolo:</span> Vence se for eliminado! Seu objetivo é agir de forma suspeita e atraia votos. **Aparece a partir de 7 jogadores.**</li>
+                <li><span className="text-cyan-400 font-semibold">Agente:</span> Conhece o Fato Secreto da missão. Seu objetivo é identificar e eliminar todos os Espiões através da votação.</li>
+                <li><span className="text-red-500 font-semibold">Espião:</span> NÃO conhece o Fato Secreto. Deve tentar descobrir o segredo observando os Agentes e se misturar sem ser descoberto. <strong>Sempre há pelo menos 2 Espiões em cada partida.</strong></li>
+                <li><span className="text-purple-500 font-semibold">Agente Triplo:</span> Conhece o Fato Secreto, mas vence com os Espiões. Deve ajudá-los discretamente sem se revelar. <strong>Aparece apenas com 7 ou mais jogadores.</strong></li>
+                <li><span className="text-yellow-500 font-semibold">O Tolo:</span> Vence sozinho se for eliminado! Deve agir de forma suspeita para atrair votos sem parecer óbvio demais. <strong>Aparece apenas com 7 ou mais jogadores.</strong></li>
               </ul>
             </section>
 
@@ -84,7 +84,7 @@ export default function SplashScreen({ onSelectMode }: SplashScreenProps) {
                 As Missões
               </h3>
               <p className="text-muted-foreground">
-Em cada rodada, uma missão é apresentada. Agentes conhecem o segredo (Palavra, Local, Código, etc.), enquanto os Espiões precisam blefar usando apenas as dicas públicas e o contexto da discussão. O objetivo dos Agentes é identificar o Espião, e o do Espião é não ser descoberto.
+Cada rodada apresenta uma missão com um <strong>Fato Secreto</strong> que pode ser: um desenho, um código numérico, uma ordem de emojis ou uma história colaborativa. <strong>Apenas os Agentes (e o Agente Triplo) conhecem o Fato Secreto.</strong> Os Espiões devem observar as ações e discussões dos Agentes para tentar deduzir o segredo e se passar por Agentes.
               </p>
             </section>
 
@@ -94,7 +94,7 @@ Em cada rodada, uma missão é apresentada. Agentes conhecem o segredo (Palavra,
                 Habilidades Especiais
               </h3>
               <p className="text-muted-foreground">
-Cada jogador recebe uma habilidade única que pode usar uma vez por partida (ex: Espiar Voto, Trocar Voto, Tempo Extra). Use estrategicamente para descobrir espiões, manipular a votação ou se proteger da eliminação. As habilidades são reveladas apenas ao jogador que as possui.
+Cada jogador recebe uma <strong>habilidade especial</strong> que pode usar <strong>uma vez por partida</strong>. Exemplos: Espiar Voto (ver o voto de alguém), Trocar Voto (mudar seu voto após ver resultados), Tempo Extra (+30s), Escudo (proteção contra eliminação), entre outras. Os Espiões recebem habilidades especiais como Transcrever Ligação (revela o Fato Secreto embaralhado) ou Revotação +30s. Use estrategicamente!
               </p>
             </section>
 
@@ -104,12 +104,12 @@ Cada jogador recebe uma habilidade única que pode usar uma vez por partida (ex:
                 Fluxo do Jogo
               </h3>
               <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-<li>**Início:** Cada jogador recebe seu papel. Agentes recebem **3 Fatos Secretos** (Palavra, Local, etc.) e devem deduzir qual é o correto. Espiões não recebem nenhum Fato.</li>
-                        <li>**Missão:** A missão da rodada é revelada. Pode ser uma Palavra Chave, um Desenho Secreto, um Ranking Secreto (com emojis) ou uma Explicação.</li>
-                        <li>**Discussão/Interação:** Os jogadores interagem de acordo com a missão (ex: desenhando, discutindo, ordenando). Agentes tentam confirmar o Fato Secreto, Espiões tentam blefar.</li>
-                        <li>**Votação:** Todos votam secretamente em quem acham que é o Espião. O Tolo tem um voto negativo que pode salvar alguém.</li>
-                        <li>**Eliminação:** O jogador mais votado é eliminado. Se for o Tolo, ele vence. Se for um Espião, os Agentes se aproximam da vitória.</li>
-                        <li>**Fim:** O jogo termina se todos os Espiões forem eliminados (vitória dos Agentes) ou se o número de Espiões for igual ou maior que o de Agentes (vitória dos Espiões). O Tolo vence se for eliminado.</li>
+                <li><strong>Revelação de Papéis:</strong> Cada jogador descobre seu papel secretamente. Agentes e Agente Triplo veem o Fato Secreto. Espiões não recebem nenhuma informação.</li>
+                <li><strong>Missão:</strong> Uma missão é apresentada (Desenho, Código, Ordem de Emojis ou História). Todos devem completar a tarefa da missão.</li>
+                <li><strong>Discussão:</strong> Jogadores discutem e tentam identificar comportamentos suspeitos. Agentes buscam inconsistências, Espiões tentam se camuflar.</li>
+                <li><strong>Votação:</strong> Cada jogador vota em quem acredita ser um Espião. A votação é secreta. O Tolo tem um voto negativo (-1) que pode salvar alguém.</li>
+                <li><strong>Eliminação:</strong> O jogador mais votado é eliminado e seu papel é revelado. Se for o Tolo, ele vence sozinho e o jogo termina.</li>
+                <li><strong>Fim do Jogo:</strong> Agentes vencem se eliminarem todos os Espiões. Espiões (e Agente Triplo) vencem se igualarem ou superarem o número de Agentes. O Tolo vence se for eliminado.</li>
               </ol>
             </section>
           </div>

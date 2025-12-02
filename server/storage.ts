@@ -254,20 +254,16 @@ export class MemStorage implements IStorage {
 
     const shuffled = shuffleArray([...room.players]);
     
-    const numSpies = Math.max(1, Math.floor(room.players.length / 3));
+    // Sempre ter no mínimo 2 espiões
+    const numSpies = Math.max(2, Math.floor(room.players.length / 3));
     
     let hasTriple = false;
     let hasJester = false;
     
+    // Triplo e Tolo aparecem apenas com 7 ou mais jogadores
     if (room.players.length >= 7) {
       hasTriple = true;
       hasJester = true;
-    } else if (room.players.length >= 5) {
-      if (Math.random() < 0.5) {
-        hasTriple = true;
-      } else {
-        hasJester = true;
-      }
     }
 
     const playersWithRoles = shuffled.map((player, index) => {
