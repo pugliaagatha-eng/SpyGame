@@ -36,6 +36,7 @@ export interface Player {
   isConnected: boolean;
   isReady?: boolean;
   disconnectTime?: number;
+  shieldActiveUntilRound?: number;
 }
 
 export interface SecretFact {
@@ -232,6 +233,16 @@ export function shuffleString(str: string): string {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr.join('');
+}
+
+export function getRandomAbilityForSpy(): Ability {
+  // Espiões não recebem escudo nem investigação forense
+  const availableAbilities = ABILITIES.filter(a => 
+    a.id !== 'shield' && 
+    a.id !== 'forensic_investigation' &&
+    a.id !== 'force_revote' // Espiões têm sua própria versão
+  );
+  return { ...availableAbilities[Math.floor(Math.random() * availableAbilities.length)], used: false };
 }
 
 export function getRandomAbility(role?: PlayerRole): Ability {

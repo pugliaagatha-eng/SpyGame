@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import type { Room, Player, Mission, DrawingData, PlayerRole, Ability, StoryContribution } from "@shared/schema";
-import { MISSIONS, getRandomAbility, getMissionAlternatives, shuffleString, SPY_ABILITY_SCRAMBLE, SPY_ABILITY_REVOTE } from "@shared/schema";
+import { MISSIONS, getRandomAbility, getRandomAbilityForSpy, getMissionAlternatives, shuffleString, SPY_ABILITY_SCRAMBLE, SPY_ABILITY_REVOTE } from "@shared/schema";
 import { notifyRoomUpdate } from "./websocket";
 
 function shuffleArray<T>(array: T[]): T[] {
@@ -287,7 +287,7 @@ export class MemStorage implements IStorage {
       
       // Espiões recebem uma habilidade comum + Transcrever Ligação
       if (role === 'spy') {
-        const commonAbility = getRandomAbility('agent'); // Habilidade comum (escudo, tempo extra, etc)
+        const commonAbility = getRandomAbilityForSpy(); // Habilidade comum sem escudo
         abilities = [
           { ...commonAbility, used: false },
           { ...SPY_ABILITY_SCRAMBLE, used: false } // Transcrever Ligação para todos os espiões
@@ -346,8 +346,8 @@ export class MemStorage implements IStorage {
       const shieldedPlayers = new Set<string>();
       
       room.players.forEach((p: Player) => {
-        const hasActiveShield = p.abilities?.some((a: Ability) => a.id === 'shield' && a.used);
-        if (hasActiveShield) {
+        // Escudo só é ativo na rodada em que foi usado
+        if (p.shieldActiveUntilRound === room.currentRound) {
           shieldedPlayers.add(p.id);
         }
       });
@@ -411,7 +411,8 @@ export class MemStorage implements IStorage {
             if (activeSpies.length === 0) {
               room.winner = 'agents';
               room.status = 'game_over';
-            } else if (activeSpies.length > activeAgents.length) {
+            } else if (activeSpies.length >= activeAgents.length) {
+              // Empate ou maioria favorece os espiões
               room.winner = 'spies';
               room.status = 'game_over';
             } else {
@@ -435,7 +436,7 @@ export class MemStorage implements IStorage {
     if (!room) return null;
 
     const player = room.players.find((p: Player) => p.id === playerId);
-    if (!player) return null;
+    if (!player || player.isEliminated) return null;
 
     const ability = player.abilities.find((a: Ability) => a.id === abilityId && !a.used);
     if (!ability) return null;
@@ -466,9 +467,10 @@ export class MemStorage implements IStorage {
           room.status = 'voting';
           room.votes = {};
           room.players.forEach((p: Player) => { p.hasVoted = false; p.votedFor = undefined; });
-          effect = 'revote_forced';
+          effect = 'revote_forced_with_time';
         } else {
           ability.used = false;
+          effect = 'ability_wrong_phase';
         }
         break;
         
@@ -483,7 +485,7 @@ export class MemStorage implements IStorage {
           p.hasVoted = false;
           p.votedFor = undefined;
         });
-        effect = 'revote_forced';
+        effect = 'revote_forced_with_time';
         break;
 
       case 'spy_vote':
@@ -505,6 +507,7 @@ export class MemStorage implements IStorage {
         break;
 
       case 'shield':
+        player.shieldActiveUntilRound = room.currentRound;
         effect = 'shield_active';
         break;
 
@@ -514,6 +517,9 @@ export class MemStorage implements IStorage {
           room.votes[playerId] = targetId;
           player.votedFor = targetId;
           effect = `vote_swapped:${oldVote}:${targetId}`;
+        } else if (room.status !== 'voting') {
+          // Reverter uso se não estiver na fase de votação
+          ability.used = false;
         }
         break;
     }

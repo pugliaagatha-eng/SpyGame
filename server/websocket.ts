@@ -530,6 +530,13 @@ async function handleUseAbility(roomId: string, payload: { playerId: string; abi
     } else if (effect === 'revote_forced') {
       // Broadcast phase change to reset voting UI
       broadcastToRoom(roomId, { type: 'phase_changed', payload: room });
+    } else if (effect === 'revote_forced_with_time') {
+      // Broadcast phase change and add 30 seconds
+      broadcastToRoom(roomId, { type: 'phase_changed', payload: room });
+      broadcastToRoom(roomId, { 
+        type: 'timer_sync', 
+        payload: { action: 'add_time', seconds: 30 } 
+      });
     }
   }
 }

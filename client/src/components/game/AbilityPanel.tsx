@@ -52,7 +52,7 @@ export default function AbilityPanel({ player, players, onUseAbility, disabled, 
   const otherPlayers = players.filter(p => p && p.id !== player?.id && !p.isEliminated);
 
   const needsTarget = (ability: Ability): boolean => {
-    return ['spy_vote', 'peek_role'].includes(ability.id);
+    return ['spy_vote', 'peek_role', 'swap_vote'].includes(ability.id);
   };
   
   const isPassiveAbility = (ability: Ability): boolean => {
@@ -97,6 +97,12 @@ export default function AbilityPanel({ player, players, onUseAbility, disabled, 
           message: `${target?.name} ainda não votou`,
         });
       }
+    } else if (selectedAbility.id === 'swap_vote' && selectedTarget) {
+      const target = players.find(p => p.id === selectedTarget);
+      setShowResult({
+        type: 'swap',
+        message: `Voto trocado para ${target?.name || 'desconhecido'}!`,
+      });
     } else if (selectedAbility.id === 'forensic_investigation') {
       if (!previousRoundVotes || Object.keys(previousRoundVotes).length === 0) {
         setShowResult({
