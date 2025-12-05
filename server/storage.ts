@@ -543,7 +543,10 @@ export class MemStorage implements IStorage {
           room.currentDrawingPlayerIndex = 0;
         } else if (room.mission?.secretFact.type === 'story') {
           room.status = 'story';
-          room.currentStoryPlayerIndex = 0;
+          // Encontrar o primeiro jogador ativo que NÃO é espião
+          const activePlayers = room.players.filter(p => !p.isEliminated);
+          const firstNonSpyIndex = activePlayers.findIndex(p => p.role !== 'spy');
+          room.currentStoryPlayerIndex = firstNonSpyIndex >= 0 ? firstNonSpyIndex : 0;
           room.storyContributions = [];
         } else if (room.mission?.secretFact.type === 'order') {
           room.status = 'order';

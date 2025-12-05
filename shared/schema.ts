@@ -227,12 +227,13 @@ export const JESTER_ABILITIES: Ability[] = [JESTER_ABILITY];
 
 // --- Funções Auxiliares ---
 export function shuffleString(str: string): string {
-  const arr = str.split('');
-  for (let i = arr.length - 1; i > 0; i--) {
+  // Embaralhar por palavra, não por letra
+  const words = str.split(' ');
+  for (let i = words.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+    [words[i], words[j]] = [words[j], words[i]];
   }
-  return arr.join('');
+  return words.join(' ');
 }
 
 export function getRandomAbilityForSpy(): Ability {

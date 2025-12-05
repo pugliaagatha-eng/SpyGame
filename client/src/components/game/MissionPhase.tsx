@@ -280,29 +280,22 @@ export default function MissionPhase({
             </div>
           )}
 
-          {mission.secretFact.type === 'order' && mission.secretFact.rankingItems && (
+          {mission.secretFact.type === 'order' && (
             <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
               <h3 className="text-sm font-semibold text-blue-400 mb-2 flex items-center gap-2">
                 <ArrowUpDown className="w-4 h-4" />
-                Emojis para Ordenar
+                Missão de Ordenação
               </h3>
-              <div className="flex flex-wrap justify-center gap-4 text-4xl">
-                {mission.secretFact.rankingItems.map((item, index) => (
-                  <span key={index} className="p-2 rounded-lg bg-background/50 hover:scale-110 transition-transform">
-                    {item}
-                  </span>
-                ))}
-              </div>
               {isAgent && (
-                <p className="text-xs text-center text-muted-foreground mt-3">
-                  Critério: <span className="text-blue-300">{mission.secretFact.rankingCriteria}</span>
+                <p className="text-sm text-center text-blue-300 mb-2">
+                  Critério: <span className="font-semibold">{mission.secretFact.rankingCriteria}</span>
                 </p>
               )}
-              {doesNotKnowSecret && (
-                <p className={`text-xs text-center mt-3 ${isJester ? 'text-yellow-400/60' : 'text-red-400/60'}`}>
-                  Critério desconhecido - observe os agentes
-                </p>
-              )}
+              <p className="text-xs text-center text-muted-foreground">
+                {isAgent 
+                  ? 'Você conhece o critério de ordenação. Os emojis serão revelados na próxima fase.'
+                  : 'Você NÃO conhece o critério de ordenação. Observe os agentes!'}
+              </p>
             </div>
           )}
 

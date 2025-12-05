@@ -176,7 +176,11 @@ async function handleStoryContribution(roomId: string, payload: { playerId: stri
     timestamp: Date.now(),
   });
   
-  const newIndex = currentIndex + 1;
+  // Encontrar o próximo jogador que NÃO é espião
+  let newIndex = currentIndex + 1;
+  while (newIndex < activePlayers.length && activePlayers[newIndex].role === 'spy') {
+    newIndex++;
+  }
   
   if (newIndex >= activePlayers.length) {
     await storage.updateRoom(roomId, { 
@@ -443,11 +447,54 @@ async function handlePlayerReadyForRematch(roomId: string, playerId: string) {
   
   player.isReady = true;
   player.isConnected = true;
-  await storage.updateRoom(roomId, { players: room.players });
   
-  const updatedRoom = await storage.getRoom(roomId);
-  if (updatedRoom) {
-    broadcastToRoom(roomId, { type: 'player_ready_for_rematch', payload: updatedRoom });
+  // Verificar se todos os jogadores estão prontos para jogar novamente
+  const allReady = room.players.every(p => p.isReady);
+  
+  if (allReady) {
+    // Resetar a sala para o estado inicial (lobby)
+    room.players.forEach(p => {
+      p.role = undefined;
+      p.isEliminated = false;
+      p.hasVoted = false;
+      p.votedFor = undefined;
+      p.isReady = false;
+      p.abilities = [];
+      p.shieldActiveUntilRound = undefined;
+    });
+    
+    room.status = 'waiting';
+    room.currentRound = 1;
+    room.mission = null;
+    room.missionAlternatives = [];
+    room.drawings = [];
+    room.votes = {};
+    room.previousRoundVotes = undefined;
+    room.winner = null;
+    room.messages = [];
+    room.spyMessages = [];
+    room.storyContributions = [];
+    room.codeSubmissions = [];
+    room.orderSubmissions = [];
+    room.lastEliminatedId = undefined;
+    room.currentPlayerIndex = 0;
+    room.currentVoterIndex = 0;
+    room.currentDrawingPlayerIndex = 0;
+    room.currentStoryPlayerIndex = undefined;
+    
+    await storage.updateRoom(roomId, room);
+    
+    const updatedRoom = await storage.getRoom(roomId);
+    if (updatedRoom) {
+      broadcastToRoom(roomId, { type: 'player_ready_for_rematch', payload: updatedRoom });
+    }
+  } else {
+    await storage.updateRoom(roomId, { players: room.players });
+    
+    const updatedRoom = await storage.getRoom(roomId);
+    if (updatedRoom) {
+      broadcastToRoom(roomId, { type: 'player_ready_for_rematch', payload: updatedRoom });
+    }
   }
 }
 

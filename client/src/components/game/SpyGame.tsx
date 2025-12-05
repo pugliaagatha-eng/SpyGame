@@ -917,30 +917,50 @@ export default function SpyGame() {
 
   const handlePlayAgain = useCallback(() => {
     if (mode === 'online' && room && myPlayerId) {
-      // Marcar jogador como pronto para jogar novamente
+      // Resetar estado local e voltar para o lobby
+      setPlayers(prev => prev.map(p => ({
+        ...p,
+        role: undefined,
+        isEliminated: false,
+        hasVoted: false,
+        votedFor: undefined,
+        isReady: false,
+        abilities: [],
+        shieldActiveUntilRound: undefined,
+      })));
+      setCurrentRound(1);
+      setVotes({});
+      setDrawings([]);
+      setWinner(null);
+      setHasDecrypted(false);
+      setStoryContributions([]);
+      setCodeSubmissions([]);
+      setOrderSubmissions([]);
+      
+      // Voltar para o lobby da mesma sala
+      setPhase('room_lobby');
+      
+      // Atualizar sala no servidor para resetar estado
       sendMessage({ 
         action: 'player_ready_for_rematch', 
         roomId: room.id, 
         playerId: myPlayerId 
       });
-    }
-    
-    setPlayers(prev => prev.map(p => ({
-      ...p,
-      role: undefined,
-      isEliminated: false,
-      hasVoted: false,
-      votedFor: undefined,
-      isReady: p.id === myPlayerId ? true : p.isReady,
-      abilities: [{ ...ABILITIES[Math.floor(Math.random() * ABILITIES.length)], used: false }],
-    })));
-    setCurrentRound(1);
-    setVotes({});
-    setDrawings([]);
-    setWinner(null);
-    setHasDecrypted(false);
-    
-    if (mode === 'local') {
+    } else if (mode === 'local') {
+      setPlayers(prev => prev.map(p => ({
+        ...p,
+        role: undefined,
+        isEliminated: false,
+        hasVoted: false,
+        votedFor: undefined,
+        isReady: false,
+        abilities: [],
+      })));
+      setCurrentRound(1);
+      setVotes({});
+      setDrawings([]);
+      setWinner(null);
+      setHasDecrypted(false);
       setPhase('player_setup');
     }
   }, [mode, room, myPlayerId, sendMessage]);
